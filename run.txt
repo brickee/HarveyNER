@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0 python -W ignore run_ner_loc.py --data_dir=data/tweets --bert_model=bert-large-uncased --task_name=ner --max_seq_length=48 --num_train_epochs=100 --learning_rate=1e-4 --train_batch_size=32 --eval_batch_size=32 --do_train --do_eval --do_predict --seed=42 --use_rnn --use_crf --do_lower_case --warmup_proportion=0.1
