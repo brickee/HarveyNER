@@ -202,7 +202,7 @@ def main():
                         type=int,
                         help="Total batch size for eval.")
     parser.add_argument("--learning_rate",
-                        default=5e-5,
+                        default=0.0001,
                         type=float,
                         help="The initial learning rate for Adam.")
     parser.add_argument("--bert_lr",
@@ -259,7 +259,7 @@ def main():
     if args.use_rnn:
         output_dir += '_rnn'
     if args.do_lower_case:
-        output_dir += '_lower'
+        output_dir += '_lower1'
 
 
     if args.server_ip and args.server_port:
