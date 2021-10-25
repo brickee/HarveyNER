@@ -281,7 +281,7 @@ def main():
     parser.add_argument('--server_port', type=str, default='', help="Can be used for distant debugging.")
     parser.add_argument('--curriculum', type=str, default='', help="Determine difficulty score for curriculum learning")
     args = parser.parse_args()
-    output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model, args.curriculum, str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ])
+    output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model, 'length', str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ])
     if args.use_crf:
         output_dir+='_crf'
     if args.use_rnn:
