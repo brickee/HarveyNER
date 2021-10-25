@@ -413,7 +413,7 @@ def main():
   
     if args.do_train:
         train_features, difficulty_score = convert_examples_to_features(
-            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum)
+            train_examples, label_list, args.max_seq_length, tokenizer, True, 'length')
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
