@@ -354,6 +354,14 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             inds = frequency.argsort()
             order_features = features[inds].tolist()
             return order_features, sorted(frequency)
+        elif curriculum == 'average':
+            inds = entity_length.argsort()
+            order_features = features[inds].tolist()
+            return order_features, sorted(entity_length)
+        elif curriculum == 'number':
+            inds = num_of_label.argsort()
+            order_features = features[inds].tolist()
+            return order_features, sorted(num_of_label)
         else:
             return features
     else:
