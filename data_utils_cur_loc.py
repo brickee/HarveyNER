@@ -35,19 +35,11 @@ def count_label(lst):
         num = 0.1
     return num
 
-def average_entity_length(lst):
+def average_entity_length(text, label):
     length = []
-    l = 0
-    for i in range(len(lst)):   
-        if l!= 0 and lst[i] != 'O':
-            l += 1
-        elif lst[i] != 'O':
-            l = 1    
-        elif l != 0 and lst[i] == 'O':
-            length.append(l)
-            l = 0
-    if lst[-1] != 'O':
-        length.append(l)
+    for i in range(len(label)):   
+        if label[i] != 'O':
+            length.append(len(text[i]))
     if len(length) == 0:
         return 13
     return sum(length) / len(length)
@@ -289,7 +281,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         times = labellist.count('O') / len(labellist)
         frequency.append(times)
         num_of_label.append(count_label(labellist))
-        entity_length.append(average_entity_length(labellist))
+        entity_length.append(average_entity_length(textlist, labellist))
         '''
         if training:
             if len(textlist) <= 18:
