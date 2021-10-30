@@ -26,22 +26,22 @@ class InputExample(object):
 
 def count_label(lst):
     num = 0
-    for i in range(1, len(lst)):
-        if lst[i-1] != 'O' and lst[i] == 'O':
+    for i in range(len(lst)):
+        if lst[i][0] =='B':
             num += 1
-    if lst[-1] != 'O':
-        num += 1
     if num == 0:
-        num = 0.1
+        num = 0.9
     return num
 
 def average_entity_length(text, label):
     length = []
     for i in range(len(label)):   
-        if label[i] != 'O':
+        if label[i][0] == 'B':
             length.append(len(text[i]))
+        elif label[i][0] == 'I':
+            length[-1] += len(text[i]) 
     if len(length) == 0:
-        return 13
+        return 50
     return sum(length) / len(length)
 
 class InputFeatures(object):
@@ -279,9 +279,21 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
 
         length.append(len(textlist))
         times = labellist.count('O') / len(labellist)
-        frequency.append(times)
-        num_of_label.append(count_label(labellist))
-        entity_length.append(average_entity_length(textlist, labellist))
+        #frequency.append(times)
+        #num_of_label.append(count_label(labellist))
+        #entity_length.append(average_entity_length(textlist, labellist))
+        if times < 1:
+            frequency.append(times)
+            num_of_label.append(count_label(labellist))
+            entity_length.append(average_entity_length(textlist,labellist))
+        elif len(length) == 1:
+            frequency.append(0)
+            num_of_label.append(0)
+            entity_length.append(0)
+        else:
+            frequency.append(np.mean(frequency))
+            num_of_label.append(np.mean(num_of_label))
+            entity_length.append(np.mean(entity_length))
         '''
         if training:
             if len(textlist) <= 18:

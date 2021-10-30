@@ -430,7 +430,7 @@ def main():
         else:
             train_sampler = DistributedSampler(train_data)
         '''
-        train_sampler = CurriculumSampler(train_data, difficulty_score = difficulty_score, competence=0.5)
+        train_sampler = CurriculumSampler(train_data, difficulty_score = difficulty_score, competence=np.quantile(difficulty_score, 0.3))
         #TODO: why not use shuffle?
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
 
