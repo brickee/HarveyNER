@@ -24,25 +24,25 @@ class InputExample(object):
         self.label = label
         self.tags = tags
 
-def count_label(lst):
+def number_of_entity(labels):
     num = 0
-    for i in range(len(lst)):
-        if lst[i][0] =='B':
+    for label in labels:
+        if label[0] == 'B':
             num += 1
     if num == 0:
-        num = 0.9
+        return 10
     return num
 
-def average_entity_length(text, label):
-    length = []
-    for i in range(len(label)):   
-        if label[i][0] == 'B':
-            length.append(len(text[i]))
-        elif label[i][0] == 'I':
-            length[-1] += len(text[i]) 
-    if len(length) == 0:
-        return 50
-    return sum(length) / len(length)
+def average_entity_length(text, labels):
+    num_of_entity = []
+    for word, label in zip(text, labels):
+        if label[0] == 'B':
+            num_of_entity.append(len(word))
+        elif label[0] =='I':
+            num_of_entity[-1] += len(word)
+    if len(num_of_entity) == 0:
+        return 60
+    return np.mean(num_of_entity)
 
 class InputFeatures(object):
     """A single set of features of data."""
@@ -280,11 +280,11 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         length.append(len(textlist))
         times = labellist.count('O') / len(labellist)
         #frequency.append(times)
-        #num_of_label.append(count_label(labellist))
+        #num_of_label.append(number_of_entity(labellist))
         #entity_length.append(average_entity_length(textlist, labellist))
         if times < 1:
             frequency.append(times)
-            num_of_label.append(count_label(labellist))
+            num_of_label.append(number_of_entity(labellist))
             entity_length.append(average_entity_length(textlist,labellist))
         elif len(length) == 1:
             frequency.append(0)
