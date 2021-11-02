@@ -2,62 +2,23 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="c8d5ca29-1af0-4a5d-b033-79dc5d7263c9" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/tweets/tweets.train8.bio" beforeDir="false" afterPath="$PROJECT_DIR$/data/tweets/tweets.train8.bio" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run.txt" beforeDir="false" afterPath="$PROJECT_DIR$/run.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run_ner_loc.py" beforeDir="false" afterPath="$PROJECT_DIR$/run_ner_loc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.dev10.bio" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.dev11.bio" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.dev9.bio" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.test10.bio" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.test11.bio" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.test9.bio" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.train10.bio" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.train11.bio" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.train9.bio" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_utils_cur_loc.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_utils_cur_loc.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_utils_loc.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_utils_loc.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run_ner_cur_loc.py" beforeDir="false" afterPath="$PROJECT_DIR$/run_ner_cur_loc.py" afterDir="false" />
     </list>
-    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
-  </component>
-  <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/run_ner_loc.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="820">
-              <caret line="261" column="30" selection-start-line="261" selection-start-column="30" selection-end-line="261" selection-end-column="30" />
-              <folding>
-                <element signature="e#0#64#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/run.txt">
-          <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret column="100" selection-start-column="100" selection-end-column="100" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/model_loc.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="180">
-              <caret line="9" column="11" selection-start-line="9" selection-start-column="11" selection-end-line="9" selection-end-column="11" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/data_utils_loc.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1300">
-              <caret line="98" column="41" lean-forward="true" selection-start-line="98" selection-start-column="41" selection-end-line="98" selection-end-column="41" />
-              <folding>
-                <element signature="e#0#9#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
@@ -68,6 +29,13 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/model_loc.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/run_ner_fre_loc.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/data_utils_loc.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/run_ner_cur_loc.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/data_utils_cur_loc.py" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
@@ -128,18 +96,6 @@
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
-  </component>
-  <component name="RunDashboard">
-    <option name="ruleStates">
-      <list>
-        <RuleState>
-          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
-        </RuleState>
-        <RuleState>
-          <option name="name" value="StatusDashboardGroupingRule" />
-        </RuleState>
-      </list>
-    </option>
   </component>
   <component name="RunManager" selected="Python.run_ner_loc">
     <configuration name="model_loc" type="PythonConfigurationType" factoryName="Python" temporary="true">
@@ -248,9 +204,23 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/BERT_NER_LOC$preprocess.coverage" NAME="preprocess Coverage Results" MODIFIED="1635709517192" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="/" />
+    <SUITE FILE_PATH="coverage/BERT_NER_LOC$run_ner_loc.coverage" NAME="run_ner_loc Coverage Results" MODIFIED="1635712263249" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/BERT_NER_LOC$run_ner_cur_loc.coverage" NAME="run_ner_cur_loc Coverage Results" MODIFIED="1635397759228" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/BERT_NER_LOC$model_loc.coverage" NAME="model_loc Coverage Results" MODIFIED="1633037225220" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/BERT_NER_LOC$run_ner_loc.coverage" NAME="run_ner_loc Coverage Results" MODIFIED="1633037839581" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/data/tweets/labels.txt">

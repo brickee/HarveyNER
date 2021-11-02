@@ -307,13 +307,13 @@ def main():
     neutral = 'unneutral'
     if args.neutral:
         neutral = 'neutral'
-    output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model, args.curriculum, neutral, str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ])
+    output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model, str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ,args.curriculum, neutral])
     if args.use_crf:
         output_dir+='_crf'
     if args.use_rnn:
         output_dir += '_rnn'
     if args.do_lower_case:
-        output_dir += '_lower'
+        output_dir += '_lower_dev10'
     
     if args.server_ip and args.server_port:
         # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
