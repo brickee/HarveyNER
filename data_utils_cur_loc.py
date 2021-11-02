@@ -38,7 +38,7 @@ def average_entity_length(text, labels):
     for word, label in zip(text, labels):
         if label[0] == 'B':
             num_of_entity.append(len(word))
-        elif label[0] =='I':
+        elif label[0] == 'I':
             num_of_entity[-1] += len(word)
     if len(num_of_entity) == 0:
         return 60
@@ -149,7 +149,27 @@ class NerProcessor(DataProcessor):
             examples.append(InputExample(guid=guid,text_a=text_a,text_b=text_b,label=label, tags= tags))
         return examples
 
-def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, training=False, curriculum=None):
+def get_statistics(examples):
+    number_of_labeled_samples = 0
+    number_of_adverbial = 0
+    number_of_labeled_adverbial = 0
+    for sample in examples:
+        sentence = sample.text_a.split(' ')
+        labels = sample.label
+        if 'at' in sentence or 'from' in sentence or 'near' in sentence or 'on' in sentence or 'between' in sentence or 'in' in sentence:
+            number_of_adverbial += 1
+            if labels.count('O') != len(labels):
+                number_of_labeled_adverbial += 1
+                number_of_labeled_samples += 1
+        elif labels.count('O') != len(labels):
+            number_of_labeled_samples += 1
+    print("The number of samples ", len(examples), " the number of labeled samples ", number_of_labeled_samples)
+    print("The number of adverbial ", number_of_adverbial, " the number of labeled adverbial ", number_of_labeled_adverbial)
+    return number_of_labeled_samples / len(examples), number_of_labeled_adverbial / number_of_adverbial
+
+
+
+def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, training=False, curriculum=None, neutral=False):
     """Loads a data file into a list of `InputBatch`s."""
 
     label_map = {label : i for i, label in enumerate(label_list,1)}
@@ -161,6 +181,8 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     frequency = []
     num_of_label = []
     entity_length = []
+    frobenius = []
+    spectral = []
     for (ex_index,example) in enumerate(examples):
         textlist = example.text_a.split(' ')
         labellist = example.label
@@ -279,21 +301,23 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
 
         length.append(len(textlist))
         times = labellist.count('O') / len(labellist)
-        #frequency.append(times)
-        #num_of_label.append(number_of_entity(labellist))
-        #entity_length.append(average_entity_length(textlist, labellist))
-        if times < 1:
+        if not neutral:
             frequency.append(times)
             num_of_label.append(number_of_entity(labellist))
             entity_length.append(average_entity_length(textlist,labellist))
-        elif len(length) == 1:
-            frequency.append(0)
-            num_of_label.append(0)
-            entity_length.append(0)
         else:
-            frequency.append(np.mean(frequency))
-            num_of_label.append(np.mean(num_of_label))
-            entity_length.append(np.mean(entity_length))
+            if times < 1:
+                frequency.append(times)
+                num_of_label.append(number_of_entity(labellist))
+                entity_length.append(average_entity_length(textlist,labellist))
+            elif len(length) == 1:
+                frequency.append(0)
+                num_of_label.append(0)
+                entity_length.append(0)
+            else:
+                frequency.append(np.mean(frequency))
+                num_of_label.append(np.mean(num_of_label))
+                entity_length.append(np.mean(entity_length))
         '''
         if training:
             if len(textlist) <= 18:
@@ -341,6 +365,9 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                               )
                         )
         '''
+    #print(frequency)
+    #print(entity_length)
+    #print(num_of_label)    
     if training:    
         #return s + l, sorted(np.array(length)), len(s) / (len(s) + len(l))
         
@@ -354,14 +381,14 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             inds = length.argsort()
             order_features = features[inds].tolist()
             return order_features, sorted(length)
-        elif curriculum == "frequency":   
+        elif curriculum == "frequency" or curriculum == 'ratio':   
             inds = frequency.argsort()
             order_features = features[inds].tolist()
             return order_features, sorted(frequency)
         elif curriculum == 'average':
             inds = entity_length.argsort()
             order_features = features[inds].tolist()
-            return order_features, sorted(entity_length)
+            return order_features, sorted(entity_length) 
         elif curriculum == 'number':
             inds = num_of_label.argsort()
             order_features = features[inds].tolist()

@@ -30,7 +30,7 @@ from tqdm import tqdm, trange
 from seqeval.metrics import classification_report,f1_score
 
 
-from data_utils_cur_loc import NerProcessor,convert_examples_to_features,write2file,write2report
+from data_utils_loc import *#NerProcessor,convert_examples_to_features,write2file,write2report
 from model_loc import Ner
 
 
@@ -58,7 +58,7 @@ def seed_torch(seed):
     # torch.backends.cudnn.deterministic = True
 
 class CurriculumSampler(Sampler):
-    def __init__(self, dataset, difficulty_score=None, epoch = 80, competence=0.5):
+    def __init__(self, dataset, difficulty_score=None, epoch = 50, competence=0.5):
         self.dataset = dataset
         self.init_competence = competence
         self.competence = competence
@@ -70,6 +70,12 @@ class CurriculumSampler(Sampler):
         root = np.sqrt(t * (1 - square) / self.epoch + square)
         self.competence = min(1, root)
 
+    def set_difficulty_score(self, difficulty_score):
+        self.difficulty_score = difficulty_score
+
+    def set_competence(self, competence):
+        self.competence = competence
+
     def __iter__(self):
         i = 0
         if self.difficulty_score is not None:
@@ -78,15 +84,30 @@ class CurriculumSampler(Sampler):
                     break
                 i += 1
         else:
-            i = int(self.competence * len(self.dataset))
+            i = len(self.dataset)
         seed = int(torch.empty((), dtype=torch.int64).random_().item())
         generator = torch.Generator()
         generator.manual_seed(seed)
         yield from torch.randperm(i, generator=generator).tolist()
 
 
+class DynamicDataset(TensorDataset):
+    def init(self, *tensors):
+        assert all(tensors[0].size(0) == tensor.size(0) for tensor in tensors)
+        self.tensors = tensors
 
+    def __getitem__(self, index):
+        return tuple(tensor[index] for tensor in self.tensors)
 
+    def __len__(self):
+        return self.tensors[0].size(0)
+
+    def permute(self, inds):
+        self.tensors = list(self.tensors)
+        for i in range(6):
+            self.tensors[i] = self.tensors[i][inds]
+        self.tensors = tuple(self.tensors)
+       
 
 def prepare_data(features):
 
@@ -279,9 +300,14 @@ def main():
                              "Positive power of 2: static loss scaling value.\n")
     parser.add_argument('--server_ip', type=str, default='', help="Can be used for distant debugging.")
     parser.add_argument('--server_port', type=str, default='', help="Can be used for distant debugging.")
-    parser.add_argument('--curriculum', type=str, default='', help="Determine difficulty score for curriculum learning: length, frequency, number, average")
+    parser.add_argument('--curriculum', type=str, default=None, help="Determine difficulty score for curriculum learning")
+    parser.add_argument('--neutral', action='store_true', default=False, help='Whether set the unlabeled samples as neutral ones or not')
+    parser.add_argument('--initial_competence', type = float, default = 0.5, help='set the initial competence value for curriculum learning')
     args = parser.parse_args()
-    output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model, args.curriculum, str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ])
+    neutral = 'unneutral'
+    if args.neutral:
+        neutral = 'neutral'
+    output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model, args.curriculum, neutral, str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ])
     if args.use_crf:
         output_dir+='_crf'
     if args.use_rnn:
@@ -295,7 +321,7 @@ def main():
         print("Waiting for debugger attach")
         ptvsd.enable_attach(address=(args.server_ip, args.server_port), redirect_output=True)
         ptvsd.wait_for_attach()
-     
+    
     if os.path.exists(output_dir) and os.listdir(output_dir) and args.do_train:
         raise ValueError("Output directory ({}) already exists and is not empty.".format(output_dir))
     if not os.path.exists(output_dir):
@@ -303,7 +329,7 @@ def main():
     
     fh = logging.FileHandler(output_dir+'/logging.log', mode="w", encoding="utf-8")
     logger.addHandler(fh)
-
+    
 
 
 
@@ -356,7 +382,8 @@ def main():
             len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps) * args.num_train_epochs
         if args.local_rank != -1:
             num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
-
+    #print(get_statistics(train_examples))
+    #exit()
     if args.local_rank not in [-1, 0]:
         torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
     #print(train_examples[0].label)
@@ -412,16 +439,19 @@ def main():
     
   
     if args.do_train:
+        print(args.curriculum, args.neutral)
         train_features, difficulty_score = convert_examples_to_features(
-            train_examples, label_list, args.max_seq_length, tokenizer, True, curriculum=args.curriculum)
+            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, args.neutral)
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", num_train_optimization_steps)
         train_data = prepare_data(train_features)
+        #print(train_data.tensors[5].shape)
         #print(difficulty_score)
         #difficulty_score = None
-        difficulty_score = np.array(difficulty_score) / max(difficulty_score)
+        difficulty_score = (difficulty_score)/np.std(difficulty_score)
+        difficulty_score = difficulty_score / np.max(difficulty_score)
         #print(difficulty_score)
         #exit()
         '''
@@ -430,7 +460,11 @@ def main():
         else:
             train_sampler = DistributedSampler(train_data)
         '''
-        train_sampler = CurriculumSampler(train_data, difficulty_score = difficulty_score, competence=np.quantile(difficulty_score, 0.3))
+        if args.neutral:
+            init_comp = np.quantile(difficulty_score, args.initial_competence)
+        else:
+            init_comp = args.initial_competence 
+        train_sampler = CurriculumSampler(train_data,difficulty_score = difficulty_score, epoch = 60, competence=init_comp)
         #TODO: why not use shuffle?
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
 
@@ -450,13 +484,29 @@ def main():
             model.train()
             tr_loss = 0
             nb_tr_examples, nb_tr_steps = 0, 0
+            '''
+            difficulty_score = []
+            for input_ids, input_mask, segment_ids, _, _, _ in train_data:
+                
+                difficulty_score.append(model.get_difficulty_score(input_ids.unsqueeze(0).to(device), input_mask.unsqueeze(0).to(device), segment_ids.unsqueeze(0).to(device)))
+            difficulty_score = np.min(difficulty_score)/np.array(difficulty_score)
+            #print(np.min(difficulty_score))
+            #print(np.max(difficulty_score))
+            #exit() 
+            inds = np.argsort(difficulty_score)
+            train_dataloader.dataset.permute(inds)
+            train_dataloader.sampler.set_difficulty_score(sorted(difficulty_score))
+            train_dataloader.sampler.set_competence(np.median((difficulty_score)))
+            train_dataloader.sampler.update_competence(epoch)
+            '''
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
                 batch = tuple(t.to(device) for t in batch)
                 
                 input_ids, input_mask, segment_ids, label_ids, valid_ids, l_mask = batch
                 #print(input_mask.shape)
+                #exit()
                 loss = model(input_ids, segment_ids, input_mask, label_ids, valid_ids, l_mask)
-
+                
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.
                 if args.gradient_accumulation_steps > 1:
