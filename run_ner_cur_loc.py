@@ -30,7 +30,7 @@ from tqdm import tqdm, trange
 from seqeval.metrics import classification_report,f1_score
 
 
-from data_utils_loc import *#NerProcessor,convert_examples_to_features,write2file,write2report
+from data_utils_cur_loc import *#NerProcessor,convert_examples_to_features,write2file,write2report
 from model_loc import Ner
 
 

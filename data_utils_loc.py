@@ -1,5 +1,6 @@
 import os
 import logging
+import numpy as np
 logger = logging.getLogger(__name__)
 
 class InputExample(object):
@@ -23,6 +24,25 @@ class InputExample(object):
         self.label = label
         self.tags = tags
 
+def number_of_entity(labels):
+    num = 0
+    for label in labels:
+        if label[0] == 'B':
+            num += 1
+    if num == 0:
+        return 10
+    return num
+
+def average_entity_length(text, labels):
+    num_of_entity = []
+    for word, label in zip(text, labels):
+        if label[0] == 'B':
+            num_of_entity.append(len(word))
+        elif label[0] == 'I':
+            num_of_entity[-1] += len(word)
+    if len(num_of_entity) == 0:
+        return 60
+    return np.mean(num_of_entity)
 
 class InputFeatures(object):
     """A single set of features of data."""
@@ -92,19 +112,19 @@ class NerProcessor(DataProcessor):
     def get_train_examples(self, data_dir):
         """See base class."""
         return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "tweets.train10.bio")), "train")
+            self._read_tsv(os.path.join(data_dir, "tweets.train8.bio")), "train")
         #
         # return self._read_tsv(os.path.join(data_dir, "tweets.train8.bio"))
 
     def get_dev_examples(self, data_dir):
         """See base class."""
         return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "tweets.dev10.bio")), "dev")
+            self._read_tsv(os.path.join(data_dir, "tweets.dev8.bio")), "dev")
 
     def get_test_examples(self, data_dir):
         """See base class."""
         return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "tweets.test10.bio")), "test")
+            self._read_tsv(os.path.join(data_dir, "tweets.test8.bio")), "test")
 
     def get_labels(self, data_dir): # last one has to be 'SEP' ！！！！！
         # TODO: check if O should be first!
@@ -129,13 +149,40 @@ class NerProcessor(DataProcessor):
             examples.append(InputExample(guid=guid,text_a=text_a,text_b=text_b,label=label, tags= tags))
         return examples
 
-def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer):
+def get_statistics(examples):
+    number_of_labeled_samples = 0
+    number_of_adverbial = 0
+    number_of_labeled_adverbial = 0
+    for sample in examples:
+        sentence = sample.text_a.split(' ')
+        labels = sample.label
+        if 'at' in sentence or 'from' in sentence or 'near' in sentence or 'on' in sentence or 'between' in sentence or 'in' in sentence:
+            number_of_adverbial += 1
+            if labels.count('O') != len(labels):
+                number_of_labeled_adverbial += 1
+                number_of_labeled_samples += 1
+        elif labels.count('O') != len(labels):
+            number_of_labeled_samples += 1
+    print("The number of samples ", len(examples), " the number of labeled samples ", number_of_labeled_samples)
+    print("The number of adverbial ", number_of_adverbial, " the number of labeled adverbial ", number_of_labeled_adverbial)
+    return number_of_labeled_samples / len(examples), number_of_labeled_adverbial / number_of_adverbial
+
+
+
+def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, training=False, curriculum=None, neutral=False):
     """Loads a data file into a list of `InputBatch`s."""
 
     label_map = {label : i for i, label in enumerate(label_list,1)}
     # print(label_map)
 
     features = []
+    l, s = [], []
+    length = []
+    frequency = []
+    num_of_label = []
+    entity_length = []
+    frobenius = []
+    spectral = []
     for (ex_index,example) in enumerate(examples):
         textlist = example.text_a.split(' ')
         labellist = example.label
@@ -251,7 +298,105 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                               valid_ids=valid,
                               label_mask=label_mask,
                               ))
-    return features
+
+        length.append(len(textlist))
+        times = labellist.count('O') / len(labellist)
+        if not neutral:
+            frequency.append(times)
+            num_of_label.append(number_of_entity(labellist))
+            entity_length.append(average_entity_length(textlist,labellist))
+        else:
+            if times < 1:
+                frequency.append(times)
+                num_of_label.append(number_of_entity(labellist))
+                entity_length.append(average_entity_length(textlist,labellist))
+            elif len(length) == 1:
+                frequency.append(0)
+                num_of_label.append(0)
+                entity_length.append(0)
+            else:
+                frequency.append(np.mean(frequency))
+                num_of_label.append(np.mean(num_of_label))
+                entity_length.append(np.mean(entity_length))
+        '''
+        if training:
+            if len(textlist) <= 18:
+               
+                if np.random.rand() < 0.8:
+                    s.append(
+                              InputFeatures(input_ids=input_ids,
+                              input_mask=input_mask,
+                              segment_ids=segment_ids,
+                              label_id=label_ids,
+                              valid_ids=valid,
+                              label_mask=label_mask,
+                              )
+                        )
+                else:
+                    l.append(
+                              InputFeatures(input_ids=input_ids,
+                              input_mask=input_mask,
+                              segment_ids=segment_ids,
+                              label_id=label_ids,
+                              valid_ids=valid,
+                              label_mask=label_mask,
+                              )
+                        )
+               
+            else:
+                if np.random.rand() < 0.8:
+                    l.append(
+                              InputFeatures(input_ids=input_ids,
+                              input_mask=input_mask,
+                              segment_ids=segment_ids,
+                              label_id=label_ids,
+                              valid_ids=valid,
+                              label_mask=label_mask,
+                              )
+                        )
+                else:
+                    s.append(
+                              InputFeatures(input_ids=input_ids,
+                              input_mask=input_mask,
+                              segment_ids=segment_ids,
+                              label_id=label_ids,
+                              valid_ids=valid,
+                              label_mask=label_mask,
+                              )
+                        )
+        '''
+    #print(frequency)
+    #print(entity_length)
+    #print(num_of_label)    
+    if training:    
+        #return s + l, sorted(np.array(length)), len(s) / (len(s) + len(l))
+        
+        features = np.array(features)
+        length = np.array(length)
+        frequency = np.array(frequency)
+        num_of_label = 1 / np.array(num_of_label)
+        entity_length = np.array(entity_length)
+        #difficulty = frequency + 0.75 * num_of_label + 0.5 * length + 0.25 * entity_length
+        if curriculum == "length":
+            inds = length.argsort()
+            order_features = features[inds].tolist()
+            return order_features, sorted(length)
+        elif curriculum == "frequency" or curriculum == 'ratio':   
+            inds = frequency.argsort()
+            order_features = features[inds].tolist()
+            return order_features, sorted(frequency)
+        elif curriculum == 'average':
+            inds = entity_length.argsort()
+            order_features = features[inds].tolist()
+            return order_features, sorted(entity_length) 
+        elif curriculum == 'number':
+            inds = num_of_label.argsort()
+            order_features = features[inds].tolist()
+            return order_features, sorted(num_of_label)
+        else:
+            return features
+    else:
+        return features
 
 
 
