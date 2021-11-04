@@ -44,6 +44,17 @@ def average_entity_length(text, labels):
         return 60
     return np.mean(num_of_entity)
 
+def average_entity_word_length(labels):
+    num_of_entity_word = []
+    for label in labels:
+        if label[0] == 'B':
+            num_of_entity_word.append(1)
+        elif label[0] == 'I':
+            num_of_entity_word[-1] += 1
+    if num_of_entity_word == []:
+        return 20
+    return np.mean(num_of_entity_word) 
+
 class InputFeatures(object):
     """A single set of features of data."""
 
@@ -176,11 +187,14 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     # print(label_map)
 
     features = []
+    easy_features, hard_features = [], []
+    easy_metric, hard_metric = [], []
     l, s = [], []
     length = []
     frequency = []
     num_of_label = []
     entity_length = []
+    word_level_average = []
     frobenius = []
     spectral = []
     for (ex_index,example) in enumerate(examples):
@@ -273,7 +287,6 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
 
 
 
-
         if ex_index < 2:
             logger.info("*** Example ***")
             logger.info("guid: %s" % (example.guid))
@@ -298,26 +311,35 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                               valid_ids=valid,
                               label_mask=label_mask,
                               ))
-
+        if 'at' in textlist or 'in' in textlist or 'on' in textlist or 'from' in textlist or 'near' in textlist or 'between' in textlist:
+            easy_features.append(features[-1])
+            easy_metric.append(len(textlist))
+        else:
+            hard_features.append(features[-1])
+            hard_metric.append(len(textlist))
         length.append(len(textlist))
         times = labellist.count('O') / len(labellist)
         if not neutral:
             frequency.append(times)
             num_of_label.append(number_of_entity(labellist))
             entity_length.append(average_entity_length(textlist,labellist))
+            word_level_average.append(average_entity_word_length(labellist))
         else:
             if times < 1:
                 frequency.append(times)
                 num_of_label.append(number_of_entity(labellist))
                 entity_length.append(average_entity_length(textlist,labellist))
+                word_level_average.append(average_entity_word_length(labellist))
             elif len(length) == 1:
                 frequency.append(0)
                 num_of_label.append(0)
                 entity_length.append(0)
+                word_level_average.append(0)
             else:
                 frequency.append(np.mean(frequency))
                 num_of_label.append(np.mean(num_of_label))
                 entity_length.append(np.mean(entity_length))
+                word_level_average.append(np.mean(word_level_average))
         '''
         if training:
             if len(textlist) <= 18:
@@ -393,8 +415,36 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             inds = num_of_label.argsort()
             order_features = features[inds].tolist()
             return order_features, sorted(num_of_label)
+        elif curriculum == 'average-word':
+            inds = np.argsort(word_level_average)
+            order_features = features[inds]
+            return order_features, sorted(word_level_average)
+        elif curriculum == 'adverbial-length':
+            easy_metric, hard_metric = np.array(easy_metric), np.array(hard_metric)
+            easy_features, hard_features = np.array(easy_features), np.array(hard_features)
+            easy_inds, hard_inds = np.argsort(easy_metric), np.argsort(hard_metric)
+            easy_features, hard_features = easy_features[easy_inds].tolist(), hard_features[hard_inds].tolist()
+            hard_metric += np.max(easy_metric)
+            return easy_features + hard_features, sorted(np.concatenate((easy_metric, hard_metric), axis = None))
+        elif curriculum == 'length-adverbial':
+            easy_metric, hard_metric = np.array(easy_metric), np.array(hard_metric)
+            easy_features, hard_features = np.array(easy_features), np.array(hard_features)
+            easy_inds, hard_inds = np.argsort(easy_metric), np.argsort(hard_metric)
+            easy_features, hard_features = easy_features[easy_inds].tolist(), hard_features[hard_inds].tolist()
+            easy_metric, hard_metric = sorted(easy_metric.tolist()), sorted(hard_metric.tolist())
+            features, difficulty_score = [], []
+            while easy_metric and hard_metric:
+                if easy_metric[0] <= hard_metric[0]:
+                    features.append(easy_features.pop(0))
+                    difficulty_score.append(easy_metric.pop(0))
+                else:
+                    features.append(hard_features.pop(0))
+                    difficulty_score.append(hard_metric.pop(0))
+            features += easy_features + hard_features
+            difficulty_score += easy_metric + hard_metric
+            return features, np.array(difficulty_score)
         else:
-            return features
+            return features, []
     else:
         return features
 

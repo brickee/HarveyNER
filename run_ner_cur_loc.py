@@ -85,6 +85,7 @@ class CurriculumSampler(Sampler):
                 i += 1
         else:
             i = len(self.dataset)
+        print('Number of training samples:', i)
         seed = int(torch.empty((), dtype=torch.int64).random_().item())
         generator = torch.Generator()
         generator.manual_seed(seed)
@@ -300,20 +301,20 @@ def main():
                              "Positive power of 2: static loss scaling value.\n")
     parser.add_argument('--server_ip', type=str, default='', help="Can be used for distant debugging.")
     parser.add_argument('--server_port', type=str, default='', help="Can be used for distant debugging.")
-    parser.add_argument('--curriculum', type=str, default=None, help="Determine difficulty score for curriculum learning")
+    parser.add_argument('--curriculum', type=str, default='', help="Determine difficulty score for curriculum learning")
     parser.add_argument('--neutral', action='store_true', default=False, help='Whether set the unlabeled samples as neutral ones or not')
     parser.add_argument('--initial_competence', type = float, default = 0.5, help='set the initial competence value for curriculum learning')
     args = parser.parse_args()
     neutral = 'unneutral'
     if args.neutral:
         neutral = 'neutral'
-    output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model, str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ,args.curriculum, neutral])
+    output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model, args.curriculum, neutral, str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ])
     if args.use_crf:
         output_dir+='_crf'
     if args.use_rnn:
         output_dir += '_rnn'
     if args.do_lower_case:
-        output_dir += '_lower_dev10'
+        output_dir += '_lower'
     
     if args.server_ip and args.server_port:
         # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
@@ -450,8 +451,8 @@ def main():
         #print(train_data.tensors[5].shape)
         #print(difficulty_score)
         #difficulty_score = None
-        difficulty_score = (difficulty_score)/np.std(difficulty_score)
-        difficulty_score = difficulty_score / np.max(difficulty_score)
+        if len(difficulty_score) != 0:
+            difficulty_score = difficulty_score / np.max(difficulty_score)
         #print(difficulty_score)
         #exit()
         '''
@@ -460,11 +461,16 @@ def main():
         else:
             train_sampler = DistributedSampler(train_data)
         '''
-        if args.neutral:
+        if args.neutral and len(difficulty_score) != 0:
             init_comp = np.quantile(difficulty_score, args.initial_competence)
         else:
-            init_comp = args.initial_competence 
-        train_sampler = CurriculumSampler(train_data,difficulty_score = difficulty_score, epoch = 60, competence=init_comp)
+            init_comp = args.initial_competence
+        if len(difficulty_score) != 0: 
+            train_sampler = CurriculumSampler(train_data,difficulty_score = difficulty_score, epoch = 60, competence=init_comp)
+        elif args.local_rank == -1:
+            train_sampler = RandomSampler(train_data)
+        else:
+            train_sampler = DistributedSampler(train_data)
         #TODO: why not use shuffle?
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
 
@@ -569,7 +575,8 @@ def main():
                                     "label_map": label_map}
                     json.dump(model_config, open(os.path.join(save_dir, "model_config.json"), "w"))
                 logger.info("best f1 till now: %f", max_eval_f1)
-            train_dataloader.sampler.update_competence(epoch)
+            if len(difficulty_score) != 0:
+                train_dataloader.sampler.update_competence(epoch)
 
     if args.do_predict:
         # Load a trained model and vocabulary that you have fine-tuned
