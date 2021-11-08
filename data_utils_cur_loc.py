@@ -328,14 +328,14 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         else: weights.append(0.3)
         if not neutral:
             length.append(len(textlist))
-            frequency.append(1-times)
+            frequency.append(times)
             num_of_label.append(number_of_entity(labellist))
             entity_length.append(average_entity_length(textlist,labellist))
             word_level_average.append(average_entity_word_length(labellist))
         else:
             if times < 1:
                 length.append(len(textlist))
-                frequency.append(times)
+                frequency.append(1-times)
                 num_of_label.append(number_of_entity(labellist))
                 entity_length.append(average_entity_length(textlist,labellist))
                 word_level_average.append(average_entity_word_length(labellist))
