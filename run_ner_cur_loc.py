@@ -57,6 +57,36 @@ def seed_torch(seed):
     # torch.backends.cudnn.enabled = False
     # torch.backends.cudnn.deterministic = True
 
+class WeightedCurriculumSampler(Sampler):
+    def __init__(self, dataset, weights, T=50, competence=0.5):
+        self.dataset = dataset
+        self.weights = weights
+        self.T = T
+        self.competence = competence
+
+    def set_T(self, T):
+        self.T = T
+
+    def set_competence(self, competence):
+        self.competence = competence
+    
+    def update_competence(self, t):
+        square = self.init_competence ** 2
+        root = np.sqrt(t * (1 - square) / self.epoch + square)
+        self.competence = min(1, root)
+
+    def __iter__(self):
+        idx = int(self.competence * len(dataset))
+        weights = torch.as_tensor(self.weights[:idx], dtype = torch.double)
+        seed = int(torch.empty((), dtype=torch.int64).random_().item())
+        generator = torch.Generator()
+        generator.manual_seed(seed)
+        rand_tensor = torch.multinomial(weights, num_samples, False, generator=generator)
+        yield from iter(rand_tensor.tolist())
+
+
+
+
 class CurriculumSampler(Sampler):
     def __init__(self, dataset, difficulty_score=None, epoch = 50, competence=0.5):
         self.dataset = dataset
@@ -78,13 +108,13 @@ class CurriculumSampler(Sampler):
 
     def __iter__(self):
         i = 0
-        if self.difficulty_score is not None:
+        if self.difficulty_score is not None and len(self.difficulty_score) != 0:
             while i in range(len(self.difficulty_score)):
                 if self.difficulty_score[i] > self.competence:
                     break
                 i += 1
         else:
-            i = len(self.dataset)
+            i = int(self.competence * len(self.dataset))
         print('Number of training samples:', i)
         seed = int(torch.empty((), dtype=torch.int64).random_().item())
         generator = torch.Generator()
@@ -453,7 +483,8 @@ def main():
         #difficulty_score = None
         if len(difficulty_score) != 0:
             difficulty_score = difficulty_score / np.max(difficulty_score)
-        #print(difficulty_score)
+        print(difficulty_score)
+        print(len(difficulty_score))
         #exit()
         '''
         if args.local_rank == -1:
@@ -465,7 +496,7 @@ def main():
             init_comp = np.quantile(difficulty_score, args.initial_competence)
         else:
             init_comp = args.initial_competence
-        if len(difficulty_score) != 0: 
+        if  args.curriculum != '': 
             train_sampler = CurriculumSampler(train_data,difficulty_score = difficulty_score, epoch = 60, competence=init_comp)
         elif args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
@@ -575,7 +606,7 @@ def main():
                                     "label_map": label_map}
                     json.dump(model_config, open(os.path.join(save_dir, "model_config.json"), "w"))
                 logger.info("best f1 till now: %f", max_eval_f1)
-            if len(difficulty_score) != 0:
+            if args.curriculum != '':
                 train_dataloader.sampler.update_competence(epoch)
 
     if args.do_predict:

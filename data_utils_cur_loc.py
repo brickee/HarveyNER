@@ -1,5 +1,6 @@
 import os
 import logging
+import random
 import numpy as np
 logger = logging.getLogger(__name__)
 
@@ -180,7 +181,7 @@ def get_statistics(examples):
 
 
 
-def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, training=False, curriculum=None, neutral=False):
+def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, training=False, curriculum=None, neutral=False, diversity=False):
     """Loads a data file into a list of `InputBatch`s."""
 
     label_map = {label : i for i, label in enumerate(label_list,1)}
@@ -197,6 +198,10 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     word_level_average = []
     frobenius = []
     spectral = []
+    labeled_features = []
+    unlabeled_features = []
+    labeled_metric = []
+    weights = []
     for (ex_index,example) in enumerate(examples):
         textlist = example.text_a.split(' ')
         labellist = example.label
@@ -259,7 +264,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         input_ids = tokenizer.convert_tokens_to_ids(ntokens)
         input_mask = [1] * len(input_ids)
         label_mask = [1] * len(label_ids)
-
+        
         while len(input_ids) < max_seq_length:
             input_ids.append(0)
             input_mask.append(0)
@@ -317,29 +322,30 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         else:
             hard_features.append(features[-1])
             hard_metric.append(len(textlist))
-        length.append(len(textlist))
         times = labellist.count('O') / len(labellist)
+        if times == 1:
+            weights.append(0.7)
+        else: weights.append(0.3)
         if not neutral:
+            length.append(len(textlist))
             frequency.append(times)
             num_of_label.append(number_of_entity(labellist))
             entity_length.append(average_entity_length(textlist,labellist))
             word_level_average.append(average_entity_word_length(labellist))
         else:
             if times < 1:
+                length.append(len(textlist))
                 frequency.append(times)
                 num_of_label.append(number_of_entity(labellist))
                 entity_length.append(average_entity_length(textlist,labellist))
                 word_level_average.append(average_entity_word_length(labellist))
-            elif len(length) == 1:
-                frequency.append(0)
-                num_of_label.append(0)
-                entity_length.append(0)
-                word_level_average.append(0)
+                labeled_features.append(features[-1])
             else:
-                frequency.append(np.mean(frequency))
-                num_of_label.append(np.mean(num_of_label))
-                entity_length.append(np.mean(entity_length))
-                word_level_average.append(np.mean(word_level_average))
+                #frequency.append(np.mean(frequency))
+                #num_of_label.append(np.mean(num_of_label))
+                #entity_length.append(np.mean(entity_length))
+                #word_level_average.append(np.mean(word_level_average))
+                unlabeled_features.append(features[-1])
         '''
         if training:
             if len(textlist) <= 18:
@@ -396,29 +402,33 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         features = np.array(features)
         length = np.array(length)
         frequency = np.array(frequency)
-        num_of_label = 1 / np.array(num_of_label)
+        num_of_label = np.array(num_of_label)
         entity_length = np.array(entity_length)
         #difficulty = frequency + 0.75 * num_of_label + 0.5 * length + 0.25 * entity_length
         if curriculum == "length":
-            inds = length.argsort()
-            order_features = features[inds].tolist()
-            return order_features, sorted(length)
+            labeled_metric = length
+            #order_features = features[inds].tolist()
+            #return order_features, sorted(length)
         elif curriculum == "frequency" or curriculum == 'ratio':   
-            inds = frequency.argsort()
-            order_features = features[inds].tolist()
-            return order_features, sorted(frequency)
+            #inds = frequency.argsort()
+            #order_features = features[inds].tolist()
+            #return order_features, sorted(frequency)
+            labeled_metric = frequency
         elif curriculum == 'average':
-            inds = entity_length.argsort()
-            order_features = features[inds].tolist()
-            return order_features, sorted(entity_length) 
+            #inds = entity_length.argsort()
+            #order_features = features[inds].tolist()
+            #return order_features, sorted(entity_length) 
+            labeled_metric = entity_length
         elif curriculum == 'number':
-            inds = num_of_label.argsort()
-            order_features = features[inds].tolist()
-            return order_features, sorted(num_of_label)
+            #inds = num_of_label.argsort()
+            #order_features = features[inds].tolist()
+            #return order_features, sorted(num_of_label)
+            labeled_metric = num_of_label
         elif curriculum == 'average-word':
-            inds = np.argsort(word_level_average)
-            order_features = features[inds]
-            return order_features, sorted(word_level_average)
+            #inds = np.argsort(word_level_average)
+            #order_features = features[inds]
+            #return order_features, sorted(word_level_average)
+            labeled_metric = word_level_average
         elif curriculum == 'adverbial-length':
             easy_metric, hard_metric = np.array(easy_metric), np.array(hard_metric)
             easy_features, hard_features = np.array(easy_features), np.array(hard_features)
@@ -445,6 +455,41 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             return features, np.array(difficulty_score)
         else:
             return features, []
+        if neutral:
+            labeled_features, labeled_metric = np.array(labeled_features), np.array(labeled_metric)
+            inds = np.argsort(labeled_metric)
+            labeled_features = labeled_features[inds].tolist()
+            features = []
+            while labeled_features and unlabeled_features:
+                rand = random.random()
+                if rand <= 0.3:
+                    rand = random.random()
+                    if rand >= 0.2:
+                        features.append(labeled_features.pop(0))
+                    else:
+                        idx = random.randrange(len(labeled_features))
+                        features.append(labeled_features.pop(idx))
+                else:
+                    idx = random.randrange(len(unlabeled_features))
+                    features.append(unlabeled_features.pop(idx))
+            while labeled_features:
+                rand = random.random()
+                if rand >= 0.2:
+                    features.append(labeled_features.pop(0))
+                else:
+                    idx = random.randrange(len(labeled_features))
+                    features.append(labeled_features.pop(idx))
+            while unlabeled_features:
+                idx = random.randrange(len(unlabeled_features))
+                features.append(unlabeled_features.pop(idx))
+            print(len(features))
+            return features, []
+        else:
+            inds = np.argsort(labeled_metric)
+            features = features[inds].tolist()
+            weights = np.array(weights)[inds].tolist()
+            if diversity: return features, weights
+            return features, sorted(labeled_metric)
     else:
         return features
 
