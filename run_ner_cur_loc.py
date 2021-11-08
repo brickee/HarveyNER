@@ -88,12 +88,13 @@ class WeightedCurriculumSampler(Sampler):
 
 
 class CurriculumSampler(Sampler):
-    def __init__(self, dataset, difficulty_score=None, epoch = 50, competence=0.5):
+    def __init__(self, dataset, difficulty_score=None, epoch = 50, competence=0.5, neutral=False):
         self.dataset = dataset
         self.init_competence = competence
         self.competence = competence
         self.epoch = epoch
         self.difficulty_score = difficulty_score
+        self.neutral = neutral
 
     def update_competence(self, t):
         square = self.init_competence ** 2
@@ -108,7 +109,7 @@ class CurriculumSampler(Sampler):
 
     def __iter__(self):
         i = 0
-        if self.difficulty_score is not None and len(self.difficulty_score) != 0:
+        if self.difficulty_score is not None and len(self.difficulty_score) != 0 and self.neutral:
             while i in range(len(self.difficulty_score)):
                 if self.difficulty_score[i] > self.competence:
                     break
@@ -476,7 +477,7 @@ def main():
     if args.do_train:
         print(args.curriculum, args.neutral)
         train_features, difficulty_score = convert_examples_to_features(
-            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, args.neutral, ordered=args.ordered)
+            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, args.neutral, ordered=args.ordered, word_emb_dir='glove/glove.twitter.27B.100d.txt')
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
@@ -501,7 +502,7 @@ def main():
         else:
             init_comp = args.initial_competence
         if  args.curriculum != '': 
-            train_sampler = CurriculumSampler(train_data,difficulty_score = difficulty_score, epoch = 50, competence=init_comp)
+            train_sampler = CurriculumSampler(train_data,difficulty_score = difficulty_score, epoch = 50, competence=init_comp, neutral=args.neutral)
         elif args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
         else:

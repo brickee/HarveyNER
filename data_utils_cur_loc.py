@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import random
 import numpy as np
@@ -189,13 +190,40 @@ def get_statistics(examples):
     return number_of_labeled_samples / len(examples), number_of_labeled_adverbial / number_of_adverbial
 
 
+def load_pretrain_emb(embedding_path):
+    embedd_dim = -1
+    embedd_dict = dict()
+    with open(embedding_path, 'r', encoding="utf8") as file:
+        for line in file:
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            tokens = line.split()
+            if embedd_dim < 0:
+                embedd_dim = len(tokens) - 1
+            elif embedd_dim + 1 != len(tokens):
+                ## ignore illegal embedding line
+                continue
+                # assert (embedd_dim + 1 == len(tokens))
+            embedd = np.empty([1, embedd_dim])
+            embedd[:] = tokens[1:]
+            if sys.version_info[0] < 3:
+                first_col = tokens[0].decode('utf-8')
+            else:
+                first_col = tokens[0]
+            embedd_dict[first_col] = embedd
+    return embedd_dict, embedd_dim
 
-def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, training=False, curriculum=None, neutral=False, diversity=False, ordered=False):
+
+
+def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, training=False, curriculum=None, neutral=False, diversity=False, ordered=False, word_emb_dir=None):
     """Loads a data file into a list of `InputBatch`s."""
 
     label_map = {label : i for i, label in enumerate(label_list,1)}
     # print(label_map)
-
+    if curriculum == 'vocabulary' and word_emb_dir != None:
+        embedd_dict, embedd_dim = load_pretrain_emb(word_emb_dir)
+        out_vocabulary = []
     features = []
     easy_features, hard_features = [], []
     easy_metric, hard_metric = [], []
@@ -342,6 +370,12 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             num_of_label.append(number_of_entity(labellist))
             entity_length.append(average_entity_length(textlist,labellist))
             word_level_average.append(average_entity_word_length(labellist))
+            if curriculum == 'vocabulary':
+                out_vocab = 0
+                for word in textlist:
+                    if word in embedd_dict or word.lower() in embedd_dict:
+                        out_vocab += 1
+                out_vocabulary.append(out_vocab / len(textlist))
         else:
             if times < 1:
                 length.append(len(textlist))
@@ -442,6 +476,8 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             labeled_metric = word_level_average
         elif curriculum == 'complex':
             labeled_metric = complexity
+        elif curriculum == 'vocabulary':
+            labeled_metric = out_vocabulary
         elif curriculum == 'adverbial-length':
             easy_metric, hard_metric = np.array(easy_metric), np.array(hard_metric)
             easy_features, hard_features = np.array(easy_features), np.array(hard_features)
