@@ -497,7 +497,7 @@ def main():
         else:
             init_comp = args.initial_competence
         if  args.curriculum != '': 
-            train_sampler = CurriculumSampler(train_data,difficulty_score = difficulty_score, epoch = 60, competence=init_comp)
+            train_sampler = CurriculumSampler(train_data,difficulty_score = difficulty_score, epoch = 50, competence=init_comp)
         elif args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
         else:
