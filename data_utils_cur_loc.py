@@ -56,6 +56,15 @@ def average_entity_word_length(labels):
         return 20
     return np.mean(num_of_entity_word) 
 
+def generate_complexity(words, labels):
+    clues = ['and','&', 'at', '@', 'in', 'on', 'near', 'between', 'of']
+    for word, label in zip(words, labels):
+        if label != 'O' and word.lower() in clues:
+            return 1
+    return 0
+
+
+
 class InputFeatures(object):
     """A single set of features of data."""
 
@@ -181,7 +190,7 @@ def get_statistics(examples):
 
 
 
-def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, training=False, curriculum=None, neutral=False, diversity=False):
+def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, training=False, curriculum=None, neutral=False, diversity=False, ordered=False):
     """Loads a data file into a list of `InputBatch`s."""
 
     label_map = {label : i for i, label in enumerate(label_list,1)}
@@ -202,6 +211,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     unlabeled_features = []
     labeled_metric = []
     weights = []
+    complexity = []
     for (ex_index,example) in enumerate(examples):
         textlist = example.text_a.split(' ')
         labellist = example.label
@@ -339,6 +349,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                 num_of_label.append(number_of_entity(labellist))
                 entity_length.append(average_entity_length(textlist,labellist))
                 word_level_average.append(average_entity_word_length(labellist))
+                complexity.append(generate_complexity(textlist,labellist))
                 labeled_features.append(features[-1])
             else:
                 #frequency.append(np.mean(frequency))
@@ -429,6 +440,8 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             #order_features = features[inds]
             #return order_features, sorted(word_level_average)
             labeled_metric = word_level_average
+        elif curriculum == 'complex':
+            labeled_metric = complexity
         elif curriculum == 'adverbial-length':
             easy_metric, hard_metric = np.array(easy_metric), np.array(hard_metric)
             easy_features, hard_features = np.array(easy_features), np.array(hard_features)
@@ -460,11 +473,13 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             inds = np.argsort(labeled_metric)
             labeled_features = labeled_features[inds].tolist()
             features = []
+            i = 0
             while labeled_features and unlabeled_features:
                 rand = random.random()
                 if rand <= 0.3:
                     rand = random.random()
-                    if rand >= 0.2:
+                    if rand >= 0.2 or ordered:
+                        i += 1
                         features.append(labeled_features.pop(0))
                     else:
                         idx = random.randrange(len(labeled_features))
@@ -474,7 +489,8 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                     features.append(unlabeled_features.pop(idx))
             while labeled_features:
                 rand = random.random()
-                if rand >= 0.2:
+                if rand >= 0.2 or ordered:
+                    i += 1
                     features.append(labeled_features.pop(0))
                 else:
                     idx = random.randrange(len(labeled_features))
@@ -482,7 +498,10 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             while unlabeled_features:
                 idx = random.randrange(len(unlabeled_features))
                 features.append(unlabeled_features.pop(idx))
-            print(len(features))
+            print('-------------------------------')
+            print('Unbalanced:', i == len(labeled_metric))
+            print(labeled_metric.tolist().count(1))
+            print('-------------------------------')
             return features, []
         else:
             inds = np.argsort(labeled_metric)

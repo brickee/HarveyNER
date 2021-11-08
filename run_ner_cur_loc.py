@@ -334,11 +334,15 @@ def main():
     parser.add_argument('--curriculum', type=str, default='', help="Determine difficulty score for curriculum learning")
     parser.add_argument('--neutral', action='store_true', default=False, help='Whether set the unlabeled samples as neutral ones or not')
     parser.add_argument('--initial_competence', type = float, default = 0.5, help='set the initial competence value for curriculum learning')
+    parser.add_argument('--ordered', action='store_true', default=False)
     args = parser.parse_args()
     neutral = 'unneutral'
     if args.neutral:
         neutral = 'neutral'
-    output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model, args.curriculum, neutral, str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ])
+    ordered = 'balanced'
+    if args.ordered:
+        ordered = 'ordered'
+    output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model, args.curriculum, ordered, neutral, str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ])
     if args.use_crf:
         output_dir+='_crf'
     if args.use_rnn:
@@ -352,7 +356,7 @@ def main():
         print("Waiting for debugger attach")
         ptvsd.enable_attach(address=(args.server_ip, args.server_port), redirect_output=True)
         ptvsd.wait_for_attach()
-    
+        
     if os.path.exists(output_dir) and os.listdir(output_dir) and args.do_train:
         raise ValueError("Output directory ({}) already exists and is not empty.".format(output_dir))
     if not os.path.exists(output_dir):
@@ -360,7 +364,7 @@ def main():
     
     fh = logging.FileHandler(output_dir+'/logging.log', mode="w", encoding="utf-8")
     logger.addHandler(fh)
-    
+  
 
 
 
@@ -472,7 +476,7 @@ def main():
     if args.do_train:
         print(args.curriculum, args.neutral)
         train_features, difficulty_score = convert_examples_to_features(
-            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, args.neutral)
+            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, args.neutral, ordered=args.ordered)
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
