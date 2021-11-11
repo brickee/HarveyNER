@@ -57,12 +57,81 @@ def average_entity_word_length(labels):
         return 20
     return np.mean(num_of_entity_word) 
 
+
 def generate_complexity(words, labels):
     clues = ['and','&', 'at', '@', 'in', 'on', 'near', 'between', 'of']
+    easy = ['of']
+    medium = ['at', '@', 'in', 'on', 'near', 'between']
+    hard = ['and','&']
+    complexity = 0
     for word, label in zip(words, labels):
-        if label != 'O' and word.lower() in clues:
-            return 1
-    return 0
+        if word.lower() in easy and label != 'O':
+            complexity = max(complexity, 1)
+        if word.lower() in medium and label != 'O':
+            complexity = max(complexity, 2)
+        if word.lower() in hard and label != 'O':
+            complexity = max(complexity, 3)
+    return complexity 
+
+
+def generate_density_difficulty_score(complexity, oov, word_average):
+    complexity = np.array(complexity) / np.max(complexity)
+    oov = np.array(oov) / np.max(oov)
+    word_average = np.array(word_average) / np.max(word_average)
+    vectors = []
+    density = []
+
+    vectors = np.stack((complexity, word_average, oov)).T
+    mean = vectors.mean(axis=0)
+    precision = np.linalg.inv(np.cov(vectors.T))
+    vectors = (vectors - mean).dot(precision)
+    for v in vectors.tolist():
+        z = 0
+        for u in vectors:
+            z += np.linalg.norm(v-u)
+        density.append(z + np.linalg.norm(v))
+    return density
+
+
+def generate_norm_difficulty_score(complexity, oov, word_average):
+    complexity = np.array(complexity) / np.max(complexity)
+    oov = np.array(oov) / np.max(oov)
+    word_average = np.array(word_average) / np.max(word_average)
+    vectors = []
+    density = []
+
+    vectors = np.stack((complexity, word_average, oov)).T
+    mean = vectors.mean(axis=0)
+    precision = np.linalg.inv(np.cov(vectors.T))
+    vectors = (vectors - mean).dot(precision)
+    for v in vectors.tolist():
+        z = 0
+        for u in vectors:
+            z += np.linalg.norm(v-u)
+        density.append(np.linalg.norm(v))
+    return density
+
+
+def generate_length_norm_difficulty_score(length, complexity, oov, word_average):
+    length = np.array(length) / np.max(length)
+    complexity = np.array(complexity) / np.max(complexity)
+    oov = np.array(oov) / np.max(oov)
+    word_average = np.array(word_average) / np.max(word_average)
+    vectors = []
+    density = []
+
+    vectors = np.stack((length, complexity, word_average, oov)).T
+    mean = vectors.mean(axis=0)
+    precision = np.linalg.inv(np.cov(vectors.T))
+    vectors = (vectors - mean).dot(precision)
+    for v in vectors.tolist():
+        z = 0
+        for u in vectors:
+            z += np.linalg.norm(v-u)
+        density.append(np.linalg.norm(v))
+    return density
+
+
 
 
 
@@ -221,7 +290,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
 
     label_map = {label : i for i, label in enumerate(label_list,1)}
     # print(label_map)
-    if curriculum == 'vocabulary' and word_emb_dir != None:
+    if curriculum in ['vocabulary', 'oov', 'density', 'norm'] and word_emb_dir != None:
         embedd_dict, embedd_dim = load_pretrain_emb(word_emb_dir)
         out_vocabulary = []
     features = []
@@ -370,7 +439,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             num_of_label.append(number_of_entity(labellist))
             entity_length.append(average_entity_length(textlist,labellist))
             word_level_average.append(average_entity_word_length(labellist))
-            if curriculum == 'vocabulary':
+            if curriculum in ['vocabulary', 'oov', 'density', 'norm']:
                 out_vocab = 0
                 for word in textlist:
                     if word in embedd_dict or word.lower() in embedd_dict:
@@ -384,63 +453,19 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                 entity_length.append(average_entity_length(textlist,labellist))
                 word_level_average.append(average_entity_word_length(labellist))
                 complexity.append(generate_complexity(textlist,labellist))
+                if curriculum in ['vocabulary', 'oov', 'density', 'norm']:
+                    out_vocab = 0
+                    for word in textlist:
+                        if word in embedd_dict or word.lower() in embedd_dict:
+                            out_vocab += 1
+                    out_vocabulary.append(out_vocab / len(textlist))
                 labeled_features.append(features[-1])
             else:
                 #frequency.append(np.mean(frequency))
                 #num_of_label.append(np.mean(num_of_label))
                 #entity_length.append(np.mean(entity_length))
                 #word_level_average.append(np.mean(word_level_average))
-                unlabeled_features.append(features[-1])
-        '''
-        if training:
-            if len(textlist) <= 18:
-               
-                if np.random.rand() < 0.8:
-                    s.append(
-                              InputFeatures(input_ids=input_ids,
-                              input_mask=input_mask,
-                              segment_ids=segment_ids,
-                              label_id=label_ids,
-                              valid_ids=valid,
-                              label_mask=label_mask,
-                              )
-                        )
-                else:
-                    l.append(
-                              InputFeatures(input_ids=input_ids,
-                              input_mask=input_mask,
-                              segment_ids=segment_ids,
-                              label_id=label_ids,
-                              valid_ids=valid,
-                              label_mask=label_mask,
-                              )
-                        )
-               
-            else:
-                if np.random.rand() < 0.8:
-                    l.append(
-                              InputFeatures(input_ids=input_ids,
-                              input_mask=input_mask,
-                              segment_ids=segment_ids,
-                              label_id=label_ids,
-                              valid_ids=valid,
-                              label_mask=label_mask,
-                              )
-                        )
-                else:
-                    s.append(
-                              InputFeatures(input_ids=input_ids,
-                              input_mask=input_mask,
-                              segment_ids=segment_ids,
-                              label_id=label_ids,
-                              valid_ids=valid,
-                              label_mask=label_mask,
-                              )
-                        )
-        '''
-    #print(frequency)
-    #print(entity_length)
-    #print(num_of_label)    
+                unlabeled_features.append(features[-1])    
     if training:    
         #return s + l, sorted(np.array(length)), len(s) / (len(s) + len(l))
         
@@ -476,8 +501,14 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             labeled_metric = word_level_average
         elif curriculum == 'complex':
             labeled_metric = complexity
-        elif curriculum == 'vocabulary':
+        elif curriculum == 'vocabulary' or curriculum == 'oov':
             labeled_metric = out_vocabulary
+        elif curriculum == 'density':
+            labeled_metric = generate_density_difficulty_score(complexity, out_vocabulary, word_level_average)
+        elif curriculum == 'norm':
+            labeled_metric = generate_norm_difficulty_score(complexity, out_vocabulary, word_level_average)
+        elif curriculum == 'length-norm':
+            labeled_metric = generate_length_norm_difficulty_score(length, complexity, out_vocabulary, word_level_average) 
         elif curriculum == 'adverbial-length':
             easy_metric, hard_metric = np.array(easy_metric), np.array(hard_metric)
             easy_features, hard_features = np.array(easy_features), np.array(hard_features)

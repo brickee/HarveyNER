@@ -367,7 +367,6 @@ def main():
     
     fh = logging.FileHandler(output_dir+'/logging.log', mode="w", encoding="utf-8")
     logger.addHandler(fh)
-  
 
 
 
@@ -479,7 +478,7 @@ def main():
     if args.do_train:
         print(args.curriculum, args.neutral)
         train_features, difficulty_score = convert_examples_to_features(
-            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, args.neutral, ordered=args.ordered, word_emb_dir='../NCRFpp/data/glove/glove.twitter.27B.100d.txt')
+            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, args.neutral, ordered=args.ordered, word_emb_dir='glove/glove.twitter.27B.100d.txt')
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
@@ -504,7 +503,7 @@ def main():
         else:
             init_comp = args.initial_competence
         if  args.curriculum != '': 
-            train_sampler = CurriculumSampler(train_data,difficulty_score = difficulty_score, epoch = 50, competence=init_comp, neutral=args.neutral)
+            train_sampler = CurriculumSampler(train_data,difficulty_score = difficulty_score, epoch = 25, competence=init_comp, neutral=args.neutral)
         elif args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
         else:
