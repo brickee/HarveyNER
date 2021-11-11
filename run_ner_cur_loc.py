@@ -343,13 +343,15 @@ def main():
     ordered = 'balanced'
     if args.ordered:
         ordered = 'ordered'
-    output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model, args.curriculum, ordered, neutral, str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ])
+    output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model,  str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ])
     if args.use_crf:
         output_dir+='_crf'
     if args.use_rnn:
         output_dir += '_rnn'
+    if args.curriculum:
+        output_dir += '_' + args.curriculum + ordered + neutral
     if args.do_lower_case:
-        output_dir += '_lower'
+        output_dir += '_lower_dev10'
     
     if args.server_ip and args.server_port:
         # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
@@ -477,7 +479,7 @@ def main():
     if args.do_train:
         print(args.curriculum, args.neutral)
         train_features, difficulty_score = convert_examples_to_features(
-            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, args.neutral, ordered=args.ordered, word_emb_dir='glove/glove.twitter.27B.100d.txt')
+            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, args.neutral, ordered=args.ordered, word_emb_dir='../NCRFpp/data/glove/glove.twitter.27B.100d.txt')
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
@@ -514,11 +516,19 @@ def main():
         if args.do_eval:
             logger.info("***** evaluation data process*****")
             eval_examples = processor.get_dev_examples(args.data_dir)
+            logger.info("  Num eval examples = %d", len(eval_examples))
             eval_features = convert_examples_to_features(eval_examples, label_list, args.max_seq_length, tokenizer)
 
             eval_data =  prepare_data(eval_features)
             eval_sampler = SequentialSampler(eval_data)
             eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
+
+            test_examples = processor.get_test_examples(args.data_dir)
+            test_features = convert_examples_to_features(test_examples, label_list, args.max_seq_length, tokenizer)
+            logger.info("  Num test examples = %d", len(test_examples))
+            test_data = prepare_data(test_features)
+            test_sampler = SequentialSampler(test_data)
+            test_dataloader = DataLoader(test_data, sampler=test_sampler, batch_size=args.eval_batch_size)
 
 
         max_eval_f1 = -1
@@ -610,6 +620,12 @@ def main():
                                     "max_seq_length": args.max_seq_length, "num_labels": len(label_list) + 1,
                                     "label_map": label_map}
                     json.dump(model_config, open(os.path.join(save_dir, "model_config.json"), "w"))
+
+                    test_y_true, test_y_pred = evaluate(test_dataloader,model,label_map,args,tokenizer,  device)
+                    test_report = classification_report(test_y_true, test_y_pred, digits=6)
+                    logger.info("***** Test results *****")
+                    logger.info("\n%s", test_report)
+
                 logger.info("best f1 till now: %f", max_eval_f1)
             if args.curriculum != '':
                 train_dataloader.sampler.update_competence(epoch)

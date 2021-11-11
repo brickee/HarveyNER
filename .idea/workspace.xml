@@ -2,17 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="c8d5ca29-1af0-4a5d-b033-79dc5d7263c9" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.dev10.bio" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.dev11.bio" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.dev9.bio" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.test10.bio" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.test11.bio" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.test9.bio" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.train10.bio" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.train11.bio" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/tweets/tweets.train9.bio" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_utils_cur_loc.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_utils_cur_loc.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_utils_loc.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_utils_loc.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run.txt" beforeDir="false" afterPath="$PROJECT_DIR$/run.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/run_ner_cur_loc.py" beforeDir="false" afterPath="$PROJECT_DIR$/run_ner_cur_loc.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -53,6 +44,7 @@
     <option name="width" value="2576" />
     <option name="height" value="1416" />
   </component>
+  <component name="ProjectId" id="20b4BUCPUUKh4wTGOZPBDCKYRjR" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
     <navigator proportions="" version="1">
@@ -84,7 +76,13 @@
       </pane>
     </panes>
   </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
   <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="true" />
     <property name="WebServerToolWindowPanel.toolwindow.highlight.mappings" value="true" />
@@ -92,12 +90,12 @@
     <property name="WebServerToolWindowPanel.toolwindow.show.date" value="false" />
     <property name="WebServerToolWindowPanel.toolwindow.show.permissions" value="false" />
     <property name="WebServerToolWindowPanel.toolwindow.show.size" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../BERT-NER" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
-  <component name="RunManager" selected="Python.run_ner_loc">
+  <component name="RunManager" selected="Python.run_ner_cur_loc">
     <configuration name="model_loc" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="BERT-NER-LOC" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -113,6 +111,29 @@
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/model_loc.py" />
       <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="run_ner_cur_loc" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="BERT-NER-LOC" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="CUDA_VISIBLE_DEVICES" value="0" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run_ner_cur_loc.py" />
+      <option name="PARAMETERS" value="--data_dir=data/tweets --bert_model=bert-base-uncased --task_name=ner --max_seq_length=48 --num_train_epochs=1 --bert_lr=5e-5 --learning_rate=5e-5 --train_batch_size=32 --eval_batch_size=32 --do_train --do_eval --do_predict --seed=42 --do_lower_case --warmup_proportion=0.1" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -146,14 +167,17 @@
     <list>
       <item itemvalue="Python.model_loc" />
       <item itemvalue="Python.run_ner_loc" />
+      <item itemvalue="Python.run_ner_cur_loc" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.run_ner_cur_loc" />
         <item itemvalue="Python.run_ner_loc" />
         <item itemvalue="Python.model_loc" />
       </list>
     </recent_temporary>
   </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="SvnConfiguration">
     <configuration />
   </component>
@@ -166,6 +190,8 @@
       <updated>1633036430318</updated>
       <workItem from="1633036434043" duration="2107000" />
       <workItem from="1634743321650" duration="2535000" />
+      <workItem from="1636299821634" duration="11950000" />
+      <workItem from="1636520502714" duration="8114000" />
     </task>
     <servers />
   </component>
@@ -202,14 +228,26 @@
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="1" />
+    <option name="version" value="3" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="fix_seed" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
@@ -219,7 +257,7 @@
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/BERT_NER_LOC$preprocess.coverage" NAME="preprocess Coverage Results" MODIFIED="1635709517192" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="/" />
     <SUITE FILE_PATH="coverage/BERT_NER_LOC$run_ner_loc.coverage" NAME="run_ner_loc Coverage Results" MODIFIED="1635712263249" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/BERT_NER_LOC$run_ner_cur_loc.coverage" NAME="run_ner_cur_loc Coverage Results" MODIFIED="1635397759228" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/BERT_NER_LOC$run_ner_cur_loc.coverage" NAME="run_ner_cur_loc Coverage Results" MODIFIED="1636607824826" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/BERT_NER_LOC$model_loc.coverage" NAME="model_loc Coverage Results" MODIFIED="1633037225220" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="editorHistoryManager">
