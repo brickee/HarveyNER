@@ -349,7 +349,7 @@ def main():
     if args.use_rnn:
         output_dir += '_rnn'
     if args.curriculum:
-        output_dir += '_' + args.curriculum + ordered + neutral
+        output_dir += '_' + '_'.join([args.curriculum, ordered , neutral])
     if args.do_lower_case:
         output_dir += '_lower_dev10'
     
