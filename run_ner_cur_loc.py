@@ -209,7 +209,8 @@ def evaluate(eval_dataloader,model,label_map,args,tokenizer,device):
     return y_true,y_pred
 
 
-
+def set_weights(lambda1, lambda2, lambda3, lambda4):
+    return np.array([lambda1, lambda2, lambda3, lambda4])
 
 
 def main():
@@ -336,6 +337,10 @@ def main():
     parser.add_argument('--neutral', action='store_true', default=False, help='Whether set the unlabeled samples as neutral ones or not')
     parser.add_argument('--initial_competence', type = float, default = 0.5, help='set the initial competence value for curriculum learning')
     parser.add_argument('--ordered', action='store_true', default=False)
+    parser.add_argument('--lambda1', type=float, default=1)
+    parser.add_argument('--lambda2', type=float, default=1)
+    parser.add_argument('--lambda4', type=float, default=1)
+    parser.add_argument('--lambda3', type=float, default=1)
     args = parser.parse_args()
     neutral = 'unneutral'
     if args.neutral:
@@ -477,8 +482,9 @@ def main():
   
     if args.do_train:
         print(args.curriculum, args.neutral)
+        weights = set_weights(args.lambda1, args.lambda2, args.lambda3, args.lambda4)
         train_features, difficulty_score = convert_examples_to_features(
-            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, args.neutral, ordered=args.ordered, word_emb_dir='glove/glove.twitter.27B.100d.txt')
+            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, args.neutral, ordered=args.ordered, word_emb_dir='../NCRFpp/data/glove/glove.twitter.27B.100d.txt', weights=weights)
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)

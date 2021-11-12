@@ -102,8 +102,14 @@ def generate_norm_difficulty_score(complexity, oov, word_average):
 
     vectors = np.stack((complexity, word_average, oov)).T
     mean = vectors.mean(axis=0)
-    precision = np.linalg.inv(np.cov(vectors.T))
-    vectors = (vectors - mean).dot(precision)
+    std = np.std(vectors, axis=0)
+    for i in range(len(std)):
+        if std[i] == 0:
+            std[i] = 1
+    std = np.array(std)
+    vectors = (vectors - mean)/std
+    inverse_vectors = np.array([np.min(vectors[:, 0]), np.min(vectors[:, 1]), np.min(vectors[:, 2])])
+    vectors = vectors - inverse_vectors
     for v in vectors.tolist():
         z = 0
         for u in vectors:
@@ -112,18 +118,24 @@ def generate_norm_difficulty_score(complexity, oov, word_average):
     return density
 
 
-def generate_length_norm_difficulty_score(length, complexity, oov, word_average):
+def generate_length_norm_difficulty_score(length, complexity, oov, word_average, weights):
     length = np.array(length) / np.max(length)
     complexity = np.array(complexity) / np.max(complexity)
     oov = np.array(oov) / np.max(oov)
     word_average = np.array(word_average) / np.max(word_average)
     vectors = []
     density = []
-
     vectors = np.stack((length, complexity, word_average, oov)).T
+    vectors = vectors * weights
     mean = vectors.mean(axis=0)
-    precision = np.linalg.inv(np.cov(vectors.T))
-    vectors = (vectors - mean).dot(precision)
+    std = np.std(vectors, axis=0)
+    inverse_vectors = np.array([np.min(vectors[:, 0]), np.min(vectors[:, 1]), np.min(vectors[:, 2]), np.min(vectors[:, 3])])
+    vectors = vectors - inverse_vectors
+    for i in range(len(std)):
+        if std[i] == 0:
+            std[i] = 1
+    std = np.array(std)
+    vectors = (vectors - mean)/std
     for v in vectors.tolist():
         z = 0
         for u in vectors:
@@ -285,12 +297,11 @@ def load_pretrain_emb(embedding_path):
 
 
 
-def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, training=False, curriculum=None, neutral=False, diversity=False, ordered=False, word_emb_dir=None):
+def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, training=False, curriculum=None, neutral=False, diversity=False, ordered=False, word_emb_dir=None, weights=None):
     """Loads a data file into a list of `InputBatch`s."""
-
     label_map = {label : i for i, label in enumerate(label_list,1)}
     # print(label_map)
-    if curriculum in ['vocabulary', 'oov', 'density', 'norm'] and word_emb_dir != None:
+    if curriculum in ['length-norm', 'vocabulary', 'oov', 'density', 'norm'] and word_emb_dir != None:
         embedd_dict, embedd_dim = load_pretrain_emb(word_emb_dir)
         out_vocabulary = []
     features = []
@@ -307,7 +318,6 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     labeled_features = []
     unlabeled_features = []
     labeled_metric = []
-    weights = []
     complexity = []
     for (ex_index,example) in enumerate(examples):
         textlist = example.text_a.split(' ')
@@ -430,16 +440,13 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             hard_features.append(features[-1])
             hard_metric.append(len(textlist))
         times = labellist.count('O') / len(labellist)
-        if times == 1:
-            weights.append(0.7)
-        else: weights.append(0.3)
         if not neutral:
             length.append(len(textlist))
             frequency.append(times)
             num_of_label.append(number_of_entity(labellist))
             entity_length.append(average_entity_length(textlist,labellist))
             word_level_average.append(average_entity_word_length(labellist))
-            if curriculum in ['vocabulary', 'oov', 'density', 'norm']:
+            if curriculum in ['length-norm', 'vocabulary', 'oov', 'density', 'norm']:
                 out_vocab = 0
                 for word in textlist:
                     if word in embedd_dict or word.lower() in embedd_dict:
@@ -453,7 +460,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                 entity_length.append(average_entity_length(textlist,labellist))
                 word_level_average.append(average_entity_word_length(labellist))
                 complexity.append(generate_complexity(textlist,labellist))
-                if curriculum in ['vocabulary', 'oov', 'density', 'norm']:
+                if curriculum in ['length-norm', 'vocabulary', 'oov', 'density', 'norm']:
                     out_vocab = 0
                     for word in textlist:
                         if word in embedd_dict or word.lower() in embedd_dict:
@@ -508,7 +515,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         elif curriculum == 'norm':
             labeled_metric = generate_norm_difficulty_score(complexity, out_vocabulary, word_level_average)
         elif curriculum == 'length-norm':
-            labeled_metric = generate_length_norm_difficulty_score(length, complexity, out_vocabulary, word_level_average) 
+            labeled_metric = generate_length_norm_difficulty_score(length, complexity, out_vocabulary, word_level_average, weights) 
         elif curriculum == 'adverbial-length':
             easy_metric, hard_metric = np.array(easy_metric), np.array(hard_metric)
             easy_features, hard_features = np.array(easy_features), np.array(hard_features)
