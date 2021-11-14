@@ -189,6 +189,23 @@ def generate_norm3_difficulty_score(length, complexity, average, oov, cumulative
         norm.append(np.linalg.norm(v))
     return norm
 
+def rank_norm(length, complexity, average, oov, cumulative, maximum, ratio, number, weights):
+    length = scale(length)
+    complexity = scale(complexity)
+    average = scale(average)
+    oov = scale(oov)
+    cumulative = scale(cumulative)
+    maximum = scale(maximum)
+    ratio = scale(ratio)
+    number = scale(number)
+    vectors = np.stack((length, complexity, average, oov, cumulative, maximum, ratio, number)).T
+    mean = vectors.mean(axis=0)
+    std = np.std(vectors, axis=0)
+    vectors = (vectors - mean)/std
+    vectors = vectors * weights
+    rank = rankdata(vectors, axis=0, method='average').mean(axis=1)
+    norm = rank(np.linalg.norm(vectors, axis=1), method='average')
+    return np.stack(rank, norm).T.mean(axis=1)
 
 def generate_rank_score(length, complexity, average, oov, cumulative, maximum, ratio, number, weights):
     length = scale(length)
@@ -220,7 +237,19 @@ def generate_rank2_score(length, complexity, average, oov, cumulative, maximum, 
     return rank
 
 
-
+def generate_rank3_score(length, complexity, average, oov, cumulative, maximum, ratio, number, weights):
+    length = scale(length)
+    complexity = scale(complexity)
+    average = scale(average)
+    oov = scale(oov)
+    cumulative = scale(cumulative)
+    maximum = scale(maximum)
+    ratio = scale(ratio)
+    number = scale(number)
+    vectors = np.stack((length, complexity, average, oov, cumulative, maximum, ratio, number)).T
+    vectors = vectors * weights
+    rank = np.min(rankdata(vectors, axis=0, method='average'),axis=1)
+    return rank
 
 class InputFeatures(object):
     """A single set of features of data."""
@@ -376,7 +405,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     """Loads a data file into a list of `InputBatch`s."""
     label_map = {label : i for i, label in enumerate(label_list,1)}
     # print(label_map)
-    if curriculum in ['rank2', 'rank', 'norm3', 'norm2', 'length-norm', 'vocabulary', 'oov', 'density', 'norm'] and word_emb_dir != None:
+    if curriculum in ['rank3', 'rank-norm', 'norm-rank', 'rank2', 'rank', 'norm3', 'norm2', 'length-norm', 'vocabulary', 'oov', 'density', 'norm'] and word_emb_dir != None:
         embedd_dict, embedd_dim = load_pretrain_emb(word_emb_dir)
         out_vocabulary = []
     features = []
@@ -521,10 +550,10 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             num_of_label.append(number_of_entity(labellist))
             entity_length.append(average_entity_length(textlist,labellist))
             word_level_average.append(average_entity_word_length(labellist))
-            if curriculum in ['rank2', 'rank', 'norm3', 'norm2', 'length-norm', 'vocabulary', 'oov', 'density', 'norm']:
+            if curriculum in ['rank3', 'rank-norm', 'norm-rank', 'rank2', 'rank', 'norm3', 'norm2', 'length-norm', 'vocabulary', 'oov', 'density', 'norm']:
                 out_vocab = 0
                 for word in textlist:
-                    if word in embedd_dict or word.lower() in embedd_dict:
+                    if word not in embedd_dict and word.lower() not in embedd_dict:
                         out_vocab += 1
                 out_vocabulary.append(out_vocab / len(textlist))
         else:
@@ -537,10 +566,10 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                 complexity.append(generate_complexity(textlist,labellist))
                 max_entity_length.append(maximum_entity_length(labellist))
                 cumulative_complexity.append(generate_cumulative_complexity(textlist, labellist))
-                if curriculum in ['rank2', 'rank', 'norm3', 'norm2', 'length-norm', 'vocabulary', 'oov', 'density', 'norm']:
+                if curriculum in ['rank3', 'rank-norm', 'norm-rank', 'rank2', 'rank', 'norm3', 'norm2', 'length-norm', 'vocabulary', 'oov', 'density', 'norm']:
                     out_vocab = 0
                     for word in textlist:
-                        if word in embedd_dict or word.lower() in embedd_dict:
+                        if word not in embedd_dict and word.lower() not in embedd_dict:
                             out_vocab += 1
                     out_vocabulary.append(out_vocab / len(textlist))
                 labeled_features.append(features[-1])
@@ -599,6 +628,10 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             labeled_metric = generate_rank_score(length, complexity, word_level_average, out_vocabulary, cumulative_complexity, max_entity_length, frequency, num_of_label, weights)
         elif curriculum == 'rank2':
             labeled_metric = generate_rank2_score(length, complexity, word_level_average, out_vocabulary, cumulative_complexity, max_entity_length, frequency, num_of_label, weights)
+        elif curriculum == 'rank3':
+            labeled_metric = generate_rank3_score(length, complexity, word_level_average, out_vocabulary, cumulative_complexity, max_entity_length, frequency, num_of_label, weights)
+        elif curriculum == 'rank3':
+            labeled_metric = rank_norm(length, complexity, word_level_average, out_vocabulary, cumulative_complexity, max_entity_length, frequency, num_of_label, weights)
         elif curriculum == 'length-norm':
             labeled_metric = generate_length_norm_difficulty_score(length, complexity, out_vocabulary, word_level_average, weights) 
         elif curriculum == 'adverbial-length':
