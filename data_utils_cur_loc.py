@@ -200,6 +200,7 @@ def generate_rank_score(length, complexity, average, oov, cumulative, maximum, r
     ratio = scale(ratio)
     number = scale(number)
     vectors = np.stack((length, complexity, average, oov, cumulative, maximum, ratio, number)).T
+    vectors = vectors * weights 
     rank = rankdata(vectors, axis=0, method='average').mean(axis=1)
     return rank
 
