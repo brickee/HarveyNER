@@ -341,6 +341,7 @@ def main():
     parser.add_argument('--maximum_lambda', type=float, default=0, help='weight for maximum entity length')
     parser.add_argument('--ratio_lambda', type=float, default=0, help='weight for entity proportion')
     parser.add_argument('--number_lambda', type=float, default=0, help='weight for entity number')
+    parser.add_argument('--anti', action='store_true', default=False, help='set to use anti-curriculum')
     args = parser.parse_args()
     neutral = 'unneutral'
     if args.neutral:
@@ -348,13 +349,16 @@ def main():
     ordered = 'balanced'
     if args.ordered:
         ordered = 'ordered'
+    anti = 'curriculum'
+    if args.anti:
+        anti = 'anti-curriculum'
     output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model,  str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ])
     if args.use_crf:
         output_dir+='_crf'
     if args.use_rnn:
         output_dir += '_rnn'
     if args.curriculum:
-        output_dir += '_' + '_'.join([args.curriculum, ordered , neutral])
+        output_dir += '_' + '_'.join([anti,args.curriculum, ordered , neutral])
     if args.do_lower_case:
         output_dir += '_lower_dev10'
     
@@ -372,7 +376,7 @@ def main():
     
     fh = logging.FileHandler(output_dir+'/logging.log', mode="w", encoding="utf-8")
     logger.addHandler(fh)
-
+   
 
 
     processors = {"ner":NerProcessor}
@@ -484,7 +488,7 @@ def main():
         print(args.curriculum, args.neutral)
         weights = np.array([args.length_lambda, args.complexity_lambda, args.average_lambda, args.oov_lambda, args.cumulative_lambda, args.maximum_lambda, args.ratio_lambda, args.number_lambda]) 
         train_features, difficulty_score = convert_examples_to_features(
-            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, args.neutral, ordered=args.ordered, word_emb_dir='glove/glove.twitter.27B.100d.txt', weights=weights)
+            train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, neutral=args.neutral, ordered=args.ordered, word_emb_dir='glove/glove.twitter.27B.100d.txt', weights=weights, anti=args.anti)
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
