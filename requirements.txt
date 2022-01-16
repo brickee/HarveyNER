@@ -1,7 +1,7 @@
 pytorch-transformers==1.2.0
-torch==1.2.0
+torch==1.7.1
 # metric
-seqeval==0.0.5
+seqeval==1.2.1
 # training progressbar
 tqdm==4.31.1
 # tokeniztion

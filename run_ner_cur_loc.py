@@ -376,7 +376,7 @@ def main():
     
     fh = logging.FileHandler(output_dir+'/logging.log', mode="w", encoding="utf-8")
     logger.addHandler(fh)
-   
+    
 
 
     processors = {"ner":NerProcessor}
