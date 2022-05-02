@@ -47,7 +47,7 @@ $ CUDA_VISIBLE_DEVICES=0 python -W ignore run_ner_cur_loc.py --data_dir=data/twe
 # Citation
 If you extend or use this dataset, please cite the paper (to appear in NAACL 2022) where it was introduced.
 ```sh
-@article{chenpei2022HarveryNER,
+@article{chenpei2022HarveyNER,
   title={Crossroads, Buildings and Neighborhoods: A Dataset for Fine-grained Location Recognition},
   author={Chen, Pei and Xu, Haotian and Zhang, Cheng and Huang, Ruihong},
   year={2022}
