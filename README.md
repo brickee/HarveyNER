@@ -1,10 +1,10 @@
 # HarveyNER
 We introduce a new dataset HarveyNER with fne-grained locations annotated in tweets. This dataset presents unique challenges and characterizes many complex and long location mentions in informal descriptions. We built strong baseline models using Curriculum Learning and experimented with different heuristic curricula to better recognize diffcult location mentions. 
 HarveyNER focuses on the coordinate-oriented locations so we mainly annotate Point that can be precisely pinned to a map and Area that occupies a small polygon of a map. Considering that some disasters can affect line-like objects (e.g., a food can affect the neighbors of a whole river), we also include Road and River types.
-Markup : * Points: denote an exact location that a geocoordinate can be assigned. E.g., a uniquely named building, intersections of roads or rivers.
-Markup : * Areas: denote geographical entities such as city subdivisions, neighborhoods, etc.
-Markup : * Roads: denote a road or a section of a road.
-Markup : * Rivers: denote a river or a section of a river.
+* Points: denote an exact location that a geocoordinate can be assigned. E.g., a uniquely named building, intersections of roads or rivers.
+* Areas: denote geographical entities such as city subdivisions, neighborhoods, etc.
+* Roads: denote a road or a section of a road.
+* Rivers: denote a river or a section of a river.
 
 # Statistics of HarveyNER
 |    Data Split    | Train | Valid |  Test | Total |
