@@ -18,3 +18,14 @@ HarveyNER focuses on the coordinate-oriented locations so we mainly annotate Poi
 |       Area       |  715  |  236  |  212  | 1,163 |
 |       Road       |  158  |   51  |   57  |  266  |
 |       River      |  117  |   30  |   29  |  176  |
+# Requirement
+Please see [requirement](https://github.com/brickee/HarveyNER/blob/main/requirements.txt)
+
+# Run Code
+```sh
+$ CUDA_VISIBLE_DEVICES=0 python -W ignore run_ner_cur_loc.py --data_dir=data/tweets --bert_model=bert-base-uncased --task_name=ner --max_seq_length=48 --num_train_epochs=50 --learning_rate=5e-5 --bert_lr=5e-5 --train_batch_size=32 --eval_batch_size=32 --do_train --do_eval --do_predict --seed=42  --do_lower_case --warmup_proportion=0.1 --curriculum=commonness --netural --ordered --complexity_lambda=0.6 --maximum_lambda=1 --anti
+
+```
+
+# Citation
+If you extend or use this dataset, please cite the paper (to appear in NAACL 2022) where it was introduced.
