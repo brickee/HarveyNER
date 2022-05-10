@@ -486,7 +486,7 @@ def main():
   
     if args.do_train:
         print(args.curriculum, args.neutral)
-        weights = np.array([args.length_lambda, args.complexity_lambda, args.average_lambda, args.oov_lambda, args.cumulative_lambda, args.maximum_lambda, args.ratio_lambda, args.number_lambda]) 
+        weights = np.array([args.complexity_lambda, args.maximum_lambda]) 
         train_features, difficulty_score = convert_examples_to_features(
             train_examples, label_list, args.max_seq_length, tokenizer, True, args.curriculum, neutral=args.neutral, ordered=args.ordered, word_emb_dir='glove/glove.twitter.27B.100d.txt', weights=weights, anti=args.anti)
         logger.info("***** Running training *****")
