@@ -20,7 +20,7 @@ HarveyNER focuses on the coordinate-oriented locations so we mainly annotate Poi
 |       River      |  117  |   30  |   29  |  176  |
 
 # Dataset
-Please use the 10th version in the [data](https://github.com/brickee/HarveyNER/tree/main/data/tweets) directory
+Please use the latest version in the [data](https://github.com/brickee/HarveyNER/tree/main/data/tweets) directory
 
 # Requirement
 Please see [requirement](https://github.com/brickee/HarveyNER/blob/main/requirements.txt)
