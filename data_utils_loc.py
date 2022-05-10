@@ -375,19 +375,19 @@ class NerProcessor(DataProcessor):
     def get_train_examples(self, data_dir):
         """See base class."""
         return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "tweets.train10.bio")), "train")
+            self._read_tsv(os.path.join(data_dir, "tweets.train.bio")), "train")
         #
         # return self._read_tsv(os.path.join(data_dir, "tweets.train8.bio"))
 
     def get_dev_examples(self, data_dir):
         """See base class."""
         return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "tweets.dev10.bio")), "dev")
+            self._read_tsv(os.path.join(data_dir, "tweets.dev.bio")), "dev")
 
     def get_test_examples(self, data_dir):
         """See base class."""
         return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "tweets.test10.bio")), "test")
+            self._read_tsv(os.path.join(data_dir, "tweets.test.bio")), "test")
 
     def get_labels(self, data_dir): # last one has to be 'SEP' ！！！！！
         # TODO: check if O should be first!
