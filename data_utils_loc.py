@@ -386,23 +386,19 @@ class NerProcessor(DataProcessor):
     def get_labels(self, data_dir): # last one has to be 'SEP' ！！！！！
         # TODO: check if O should be first!
         # return ["O", "B-MISC", "I-MISC",  "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "[CLS]", "[SEP]"]
-        # print(self._read_tsv(os.path.join(data_dir, "labels.txt"))[0][0])
         label_list = ['O'] # make O to be in the first place
         label_list.extend([i.strip() for i in self._read_tsv(os.path.join(data_dir, "labels.txt"))[0][0][:-1]])
         label_list.extend(["[CLS]", "[SEP]"])
-        # print(label_list)
         return label_list
 
     def _create_examples(self,lines,set_type):
         examples = []
-        # print(lines)
         for i,(sentence,labels) in enumerate(lines):
             guid = "%s-%s" % (set_type, i)
             text_a = ' '.join(sentence)
             text_b = None
             label = [lbl[0] for lbl in labels]
             tags = {}
-            # print(labels, label, tags)
             examples.append(InputExample(guid=guid,text_a=text_a,text_b=text_b,label=label, tags= tags))
         return examples
 
@@ -454,10 +450,6 @@ def load_pretrain_emb(embedding_path):
 def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer, training=False, curriculum=None, neutral=False, diversity=False, ordered=False, word_emb_dir=None, weights=None, anti=False):
     """Loads a data file into a list of `InputBatch`s."""
     label_map = {label : i for i, label in enumerate(label_list,1)}
-    # print(label_map)
-    # if curriculum in ['frobenius', 'semantic','commonness', 'rank3', 'rank-norm', 'norm-rank', 'rank2', 'rank', 'norm3', 'norm2', 'length-norm', 'vocabulary', 'oov', 'density', 'norm'] and word_emb_dir != None:
-    #     embedd_dict, embedd_dim = load_pretrain_emb(word_emb_dir)
-    #     out_vocabulary = []
     features = []
     easy_features, hard_features = [], []
     easy_metric, hard_metric = [], []
@@ -483,9 +475,6 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         valid = []
         label_mask = []
         for i, word in enumerate(textlist):
-            #TODO:单个tokenize word的结果可能和整个tokenize sentence不一样！
-            # input_id 基于tokens(ntokens)建立。 因为有valid mask，所以对BERT本身没有影响。
-            # 但是图是在只保留了valid id上的构建的，所以要回归原句子的id
             token = tokenizer.tokenize(word)
             tokens.extend(token)
             label_1 = labellist[i]
@@ -508,7 +497,6 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         assert labels == labellist # if not, try to modify tag processing
 
 
-        # print(pos,dep,head)
         if len(tokens) >= max_seq_length - 1:  # TODO: only remove longer part!
             tokens = tokens[0:(max_seq_length - 2)]
             labels = labels[0:(max_seq_length - 2)]
@@ -602,12 +590,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             num_of_label.append(number_of_entity(labellist))
             entity_length.append(average_entity_length(textlist,labellist))
             word_level_average.append(average_entity_word_length(labellist))
-            # if curriculum in ['commonness', 'rank3', 'rank-norm', 'norm-rank', 'rank2', 'rank', 'norm3', 'norm2', 'length-norm', 'vocabulary', 'oov', 'density', 'norm']:
-            #     out_vocab = 0
-            #     for word in textlist:
-            #         if word not in embedd_dict and word.lower() not in embedd_dict:
-            #             out_vocab += 1
-            #     out_vocabulary.append(out_vocab / len(textlist))
+
         else:
             if times < 1:
                 length.append(len(textlist))
@@ -618,123 +601,42 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                 complexity.append(generate_complexity(textlist,labellist))
                 max_entity_length.append(maximum_entity_length(labellist))
                 cumulative_complexity.append(generate_cumulative_complexity(textlist, labellist))
-                # if curriculum in ['frobenius', 'semantic','commonness', 'rank3', 'rank-norm', 'norm-rank', 'rank2', 'rank', 'norm3', 'norm2', 'length-norm', 'vocabulary', 'oov', 'density', 'norm']:
-                #     out_vocab = 0
-                #     sentence_emb = np.empty([len(textlist), embedd_dim])
-                #     index = 0
-                #     scale = np.sqrt(3.0 / embedd_dim)
-                #     for word in textlist:
-                #         if word not in embedd_dict and word.lower() not in embedd_dict:
-                #             out_vocab += 1
-                #         if word in embedd_dict:
-                #             sentence_emb[index,:] = embedd_dict[word]
-                #         elif word.lower() in embedd_dict:
-                #             sentence_emb[index,:] = embedd_dict[word.lower()]
-                #         else:
-                #             sentence_emb[index,:] = np.random.uniform(-scale, scale, [1, embedd_dim])
-                #         index += 1
-                #     frobenius.append(np.linalg.norm(sentence_emb))
-                #     semantic.append(np.linalg.norm(np.sum(sentence_emb, axis=0)))
-                #     out_vocabulary.append(out_vocab / len(textlist))
+
                 labeled_features.append(features[-1])
             else:
-                #frequency.append(np.mean(frequency))
-                #num_of_label.append(np.mean(num_of_label))
-                #entity_length.append(np.mean(entity_length))
-                #word_level_average.append(np.mean(word_level_average))
                 unlabeled_features.append(features[-1])    
     if training:    
-        #return s + l, sorted(np.array(length)), len(s) / (len(s) + len(l))
         
         features = np.array(features)
         length = np.array(length)
         frequency = np.array(frequency)
         num_of_label = np.array(num_of_label)
         entity_length = np.array(entity_length)
-        #difficulty = frequency + 0.75 * num_of_label + 0.5 * length + 0.25 * entity_length
+
         if curriculum == "length":
             labeled_metric = length
-            #order_features = features[inds].tolist()
-            #return order_features, sorted(length)
+
         elif curriculum == 'frobenius':
             labeled_metric = frobenius
         elif curriculum == 'semantic':
-            print(semantic)
             labeled_metric = semantic
         elif curriculum =='length-common' or curriculum == 'common-length':
             labeled_metric = (length - np.mean(length)) / np.std(length)
-            #print(labeled_metric)
             labeled_metric = labeled_metric ** 2
         elif curriculum == "frequency" or curriculum == 'ratio':   
-            #inds = frequency.argsort()
-            #order_features = features[inds].tolist()
-            #return order_features, sorted(frequency)
             labeled_metric = frequency
         elif curriculum == 'average':
-            #inds = entity_length.argsort()
-            #order_features = features[inds].tolist()
-            #return order_features, sorted(entity_length) 
             labeled_metric = entity_length
         elif curriculum == 'number':
-            #inds = num_of_label.argsort()
-            #order_features = features[inds].tolist()
-            #return order_features, sorted(num_of_label)
             labeled_metric = num_of_label
         elif curriculum == 'average-word':
-            #inds = np.argsort(word_level_average)
-            #order_features = features[inds]
-            #return order_features, sorted(word_level_average)
             labeled_metric = word_level_average
         elif curriculum == 'maximum':
             labeled_metric = max_entity_length
         elif curriculum == 'complex' or curriculum == 'complexity':
             labeled_metric = complexity
-        # elif curriculum == 'vocabulary' or curriculum == 'oov':
-        #     labeled_metric = out_vocabulary
-        # elif curriculum == 'density':
-        #     labeled_metric = generate_density_difficulty_score(complexity, out_vocabulary, word_level_average)
-        # elif curriculum == 'norm':
-        #     labeled_metric = generate_norm_difficulty_score(length, complexity, word_level_average, out_vocabulary, cumulative_complexity, max_entity_length, frequency, num_of_label, weights)
         elif curriculum == 'commonness':
             labeled_metric = generate_compatible_commonness_score(complexity, max_entity_length, weights)
-        # elif curriculum == 'norm2':
-        #     labeled_metric = generate_norm2_difficulty_score(length, complexity, word_level_average, out_vocabulary, cumulative_complexity, max_entity_length, frequency, num_of_label, weights)
-        # elif curriculum == 'norm3':
-        #     labeled_metric = generate_norm3_difficulty_score(length, complexity, word_level_average, out_vocabulary, cumulative_complexity, max_entity_length, frequency, num_of_label, weights)        
-        # elif curriculum == 'rank':
-        #     labeled_metric = generate_rank_score(length, complexity, word_level_average, out_vocabulary, cumulative_complexity, max_entity_length, frequency, num_of_label, weights)
-        # elif curriculum == 'rank2':
-        #     labeled_metric = generate_rank2_score(length, complexity, word_level_average, out_vocabulary, cumulative_complexity, max_entity_length, frequency, num_of_label, weights)
-        # elif curriculum == 'rank3':
-        #     labeled_metric = generate_rank3_score(length, complexity, word_level_average, out_vocabulary, cumulative_complexity, max_entity_length, frequency, num_of_label, weights)
-        # elif curriculum == 'rank3':
-        #     labeled_metric = rank_norm(length, complexity, word_level_average, out_vocabulary, cumulative_complexity, max_entity_length, frequency, num_of_label, weights)
-        # elif curriculum == 'length-norm':
-        #     labeled_metric = generate_length_norm_difficulty_score(length, complexity, out_vocabulary, word_level_average, weights) 
-        # elif curriculum == 'adverbial-length':
-        #     easy_metric, hard_metric = np.array(easy_metric), np.array(hard_metric)
-        #     easy_features, hard_features = np.array(easy_features), np.array(hard_features)
-        #     easy_inds, hard_inds = np.argsort(easy_metric), np.argsort(hard_metric)
-        #     easy_features, hard_features = easy_features[easy_inds].tolist(), hard_features[hard_inds].tolist()
-        #     hard_metric += np.max(easy_metric)
-        #     return easy_features + hard_features, sorted(np.concatenate((easy_metric, hard_metric), axis = None))
-        # elif curriculum == 'length-adverbial':
-        #     easy_metric, hard_metric = np.array(easy_metric), np.array(hard_metric)
-        #     easy_features, hard_features = np.array(easy_features), np.array(hard_features)
-        #     easy_inds, hard_inds = np.argsort(easy_metric), np.argsort(hard_metric)
-        #     easy_features, hard_features = easy_features[easy_inds].tolist(), hard_features[hard_inds].tolist()
-        #     easy_metric, hard_metric = sorted(easy_metric.tolist()), sorted(hard_metric.tolist())
-        #     features, difficulty_score = [], []
-        #     while easy_metric and hard_metric:
-        #         if easy_metric[0] <= hard_metric[0]:
-        #             features.append(easy_features.pop(0))
-        #             difficulty_score.append(easy_metric.pop(0))
-        #         else:
-        #             features.append(hard_features.pop(0))
-        #             difficulty_score.append(hard_metric.pop(0))
-        #     features += easy_features + hard_features
-        #     difficulty_score += easy_metric + hard_metric
-        #     return features, np.array(difficulty_score)
         else:
             return features, []
         if neutral:
@@ -749,28 +651,14 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             while labeled_features and unlabeled_features:
                 rand = random.random()
                 if rand <= 0.3:
-                    # rand = random.random()
                     i += 1
                     features.append(labeled_features.pop(0))
-                    # if rand >= 0.2 or ordered:
-                    #     i += 1
-                    #     features.append(labeled_features.pop(0))
-                    # else:
-                    #     idx = random.randrange(len(labeled_features))
-                    #     features.append(labeled_features.pop(idx))
                 else:
                     idx = random.randrange(len(unlabeled_features))
                     features.append(unlabeled_features.pop(idx))
             while labeled_features:
-                # rand = random.random()
                 i += 1
                 features.append(labeled_features.pop(0))
-                # if rand >= 0.2 or ordered:
-                #     i += 1
-                #     features.append(labeled_features.pop(0))
-                # else:
-                #     idx = random.randrange(len(labeled_features))
-                #     features.append(labeled_features.pop(idx))
             while unlabeled_features:
                 idx = random.randrange(len(unlabeled_features))
                 features.append(unlabeled_features.pop(idx))
@@ -784,7 +672,6 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             if anti:
                 inds = inds[::-1]
             features = features[inds].tolist()
-            #print(labeled_metric[inds])
             return features, labeled_metric[inds]
     else:
         return features
@@ -813,7 +700,6 @@ def subtokens2tokens(tokens):
             return True
         else:
             return False
-    # tokens = ['why', 'isn', "##'", '##t', 'Alex', "##'", 'text', 'token', '##izing']
     restored_text = []
     for i in range(len(tokens)):
         if not is_subtoken(tokens[i]) and (i + 1) < len(tokens) and is_subtoken(tokens[i + 1]):

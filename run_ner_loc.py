@@ -17,11 +17,6 @@ from pytorch_transformers import (WEIGHTS_NAME, AdamW, BertConfig,
                                   BertForTokenClassification, BertTokenizer,
                                   WarmupLinearSchedule,BertModel,BertPreTrainedModel)
 
-# TODO: bugs in the neweset verstion.
-# from transformers import (WEIGHTS_NAME, AdamW, BertConfig,
-#                                   BertForTokenClassification, BertTokenizer,
-#                                   get_linear_schedule_with_warmup,BertModel,BertPreTrainedModel)
-
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
@@ -30,7 +25,7 @@ from tqdm import tqdm, trange
 from seqeval.metrics import classification_report,f1_score
 
 
-from data_utils_loc import *#NerProcessor,convert_examples_to_features,write2file,write2report
+from data_utils_loc import *
 from model_loc import Ner
 
 
@@ -227,11 +222,6 @@ def main():
                         type=str,
                         required=True,
                         help="The name of the task to train.")
-    # parser.add_argument("--output_dir",
-    #                     default=None,
-    #                     type=str,
-    #                     required=True,
-    #                     help="The output directory where the model predictions and checkpoints will be written.")
 
     ## Other parameters
     parser.add_argument("--cache_dir",
@@ -265,10 +255,6 @@ def main():
     parser.add_argument("--use_crf",
                         action='store_true',
                         help="Whether to use crf.")
-
-    # parser.add_argument("--relearn_embed",
-    #                     action='store_true',
-    #                     help='Whether to relearn embeddings.')
 
     parser.add_argument("--train_batch_size",
                         default=32,
@@ -343,24 +329,9 @@ def main():
     parser.add_argument('--number_lambda', type=float, default=0, help='weight for entity number')
     parser.add_argument('--anti', action='store_true', default=False, help='set to use anti-curriculum')
     args = parser.parse_args()
-    neutral = 'unneutral'
-    if args.neutral:
-        neutral = 'neutral'
-    ordered = 'balanced'
-    if args.ordered:
-        ordered = 'ordered'
-    anti = 'curriculum'
-    if args.anti:
-        anti = 'anti-curriculum'
+
     output_dir = '_'.join(['./saver/',args.data_dir.split('/')[-1], args.bert_model,  str(args.max_seq_length), str(args.learning_rate), str(args.bert_lr), str(args.warmup_proportion),str(args.train_batch_size),str(int(args.num_train_epochs)), str(args.seed) ])
-    if args.use_crf:
-        output_dir+='_crf'
-    if args.use_rnn:
-        output_dir += '_rnn'
-    if args.curriculum:
-        output_dir += '_' + '_'.join([anti,args.curriculum, ordered , neutral])
-    if args.do_lower_case:
-        output_dir += '_lower_dev10'
+
     
     if args.server_ip and args.server_port:
         # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
@@ -415,7 +386,7 @@ def main():
     processor = processors[task_name]()
     label_list = processor.get_labels(args.data_dir)
     num_labels = len(label_list) + 1 # why plus 1? because of the pad id 0
-    label_map = {i : label for i, label in enumerate(label_list,1)}   # start from 1!  0 is keeped!
+    label_map = {i : label for i, label in enumerate(label_list,1)}   # start from 1,  0 is keeped
     tag2ix = {label: i for i, label in enumerate(label_list, 1)}
 
     tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
@@ -428,18 +399,15 @@ def main():
             len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps) * args.num_train_epochs
         if args.local_rank != -1:
             num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
-    #print(get_statistics(train_examples))
-    #exit()
+
     if args.local_rank not in [-1, 0]:
         torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
-    #print(train_examples[0].label)
-    #exit()
+
     # Prepare model
     config = BertConfig.from_pretrained(args.bert_model, num_labels=num_labels, finetuning_task=args.task_name)
     model = Ner(args.bert_model,from_tf = False, config = config,tag_to_ix=tag2ix, device=device, use_rnn=args.use_rnn, use_crf=args.use_crf)
 
 
-    #logger.info("Mode: %s", str(model))
     if args.local_rank == 0:
         torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
 
@@ -458,7 +426,7 @@ def main():
     warmup_steps = int(args.warmup_proportion * num_train_optimization_steps)
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon)
     scheduler = WarmupLinearSchedule(optimizer, warmup_steps=warmup_steps, t_total=num_train_optimization_steps)
-    # scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=num_train_optimization_steps)
+
     if args.fp16:
         try:
             from apex import amp
@@ -478,10 +446,6 @@ def main():
     global_step = 0
     nb_tr_steps = 0
     tr_loss = 0
-
-    # text = 'murine bone marrow contains endothelial progenitors'
-    # tokens = tokenizer.tokenize(text)
-
     
   
     if args.do_train:
@@ -494,20 +458,12 @@ def main():
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", num_train_optimization_steps)
         train_data = prepare_data(train_features)
-        #print(train_data.tensors[5].shape)
-        #print(difficulty_score)
-        #difficulty_score = None
+
         if len(difficulty_score) != 0:
             difficulty_score = difficulty_score / np.max(difficulty_score)
         print(difficulty_score)
         print(len(difficulty_score))
-        #exit()
-        '''
-        if args.local_rank == -1:
-            train_sampler = RandomSampler(train_data)
-        else:
-            train_sampler = DistributedSampler(train_data)
-        '''
+
         if args.neutral and len(difficulty_score) != 0:
             init_comp = np.quantile(difficulty_score, args.initial_competence)
         else:
@@ -518,7 +474,7 @@ def main():
             train_sampler = RandomSampler(train_data)
         else:
             train_sampler = DistributedSampler(train_data)
-        #TODO: why not use shuffle?
+
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
 
         # Dev data
@@ -545,27 +501,11 @@ def main():
             model.train()
             tr_loss = 0
             nb_tr_examples, nb_tr_steps = 0, 0
-            '''
-            difficulty_score = []
-            for input_ids, input_mask, segment_ids, _, _, _ in train_data:
-                
-                difficulty_score.append(model.get_difficulty_score(input_ids.unsqueeze(0).to(device), input_mask.unsqueeze(0).to(device), segment_ids.unsqueeze(0).to(device)))
-            difficulty_score = np.min(difficulty_score)/np.array(difficulty_score)
-            #print(np.min(difficulty_score))
-            #print(np.max(difficulty_score))
-            #exit() 
-            inds = np.argsort(difficulty_score)
-            train_dataloader.dataset.permute(inds)
-            train_dataloader.sampler.set_difficulty_score(sorted(difficulty_score))
-            train_dataloader.sampler.set_competence(np.median((difficulty_score)))
-            train_dataloader.sampler.update_competence(epoch)
-            '''
+
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
                 batch = tuple(t.to(device) for t in batch)
                 
                 input_ids, input_mask, segment_ids, label_ids, valid_ids, l_mask = batch
-                #print(input_mask.shape)
-                #exit()
                 loss = model(input_ids, segment_ids, input_mask, label_ids, valid_ids, l_mask)
                 
                 if n_gpu > 1:
@@ -593,7 +533,7 @@ def main():
                     scheduler.step()  # Update learning rate schedule
                     model.zero_grad()
                     global_step += 1
-            #print("Current epoch: ", epoch)
+
             # Evaluation after each epoch
             if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
                 model.eval()
@@ -603,7 +543,6 @@ def main():
                 eval_loss, eval_accuracy = 0, 0
                 nb_eval_steps, nb_eval_examples = 0, 0
 
-                # print(next(model.parameters()).is_cuda)
                 y_true, y_pred = evaluate(eval_dataloader,model,label_map,args,tokenizer, device)
                 report = classification_report(y_true, y_pred, digits=6)
                 logger.info("***** Eval results *****")
@@ -621,10 +560,6 @@ def main():
                         os.makedirs(save_dir)
                     logger.info("Save best model to: %s", save_dir)
                     torch.save(model.state_dict(), os.path.join(save_dir, 'best_model.pt'))
-                    # model_to_save = model.module if hasattr(model,
-                    #                                         'module') else model  # Only save the model it-self
-                    # model_to_save.save_pretrained(save_dir)
-                    # tokenizer.save_pretrained(save_dir)
                     model_config = {"bert_model": args.bert_model, "do_lower": args.do_lower_case,
                                     "max_seq_length": args.max_seq_length, "num_labels": len(label_list) + 1,
                                     "label_map": label_map}
@@ -641,7 +576,6 @@ def main():
 
     if args.do_predict:
         # Load a trained model and vocabulary that you have fine-tuned
-        # model = Ner(save_dir)
 
         config = BertConfig.from_pretrained(args.bert_model, num_labels=num_labels, finetuning_task=args.task_name)
         tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
@@ -681,21 +615,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-    # # label list config
-    # processors = {"ner": NerProcessor}
-    # processor = processors['ner']()
-    # data_dir = './data/tweets/'
-    # # label_list = processor.get_labels('./data/tweets/')
-    # label_list = set()
-    # train_exmps = processor.get_train_examples(data_dir)
-    # label_list = label_list.union(set([lbl[0] for doc in train_exmps for lbl in doc[1]]))
-    # label_list = list(label_list)
-    # label_list.remove('O')
-    # label_list.append('O')
-    # with open(data_dir+'labels.txt', 'w') as f:
-    #     for lbl in label_list:
-    #         f.write(lbl)
-    #         f.write('\n')
 
 

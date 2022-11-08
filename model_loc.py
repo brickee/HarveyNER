@@ -39,9 +39,6 @@ class Ner(nn.Module):
             train_initial_hidden_state: bool = False,
             use_dropout: bool = True,
             rnn_type: str = "LSTM",
-            # GAT parameters
-            # nhid: int = 128, gat_dropout: float = 0.6, alpha: float = 0.3, nheads: int = 4
-            # loss_weights: Dict[str, float] = None,
 
     ):
         super(Ner, self).__init__()
@@ -55,7 +52,7 @@ class Ner(nn.Module):
         self.num_labels = config.num_labels # labels include PAD, CLS, SEP but not START and STOP
         self.use_dropout = use_dropout
         if self.use_dropout:
-            self.dropout = nn.Dropout(config.hidden_dropout_prob)   #TODO: how to choose different dropout for different components?
+            self.dropout = nn.Dropout(config.hidden_dropout_prob)   
         self.device = device
 
         self.reproject_embeddings = reproject_embeddings
@@ -79,7 +76,7 @@ class Ner(nn.Module):
         self.tag_to_ix = copy.deepcopy(tag_to_ix)
         self.tag_to_ix[START_TAG] = len(tag_to_ix)+1
         self.tag_to_ix[STOP_TAG] = len(tag_to_ix) + 2
-        self.tagset_size = len(self.tag_to_ix)+1  # plus one <unk> tag, all NER systems have such settings. ?? just the pad tag?
+        self.tagset_size = len(self.tag_to_ix)+1  # plus one <unk> tag, all NER systems have such settings. 
 
 
         # bidirectional LSTM on top of embedding layer
@@ -109,10 +106,6 @@ class Ner(nn.Module):
                         torch.randn(self.nlayers * num_directions, self.hidden_size),
                         requires_grad=True,
                     )
-
-                    # TODO: Decide how to initialize the hidden state variables in the future
-                    # self.hs_initializer(self.lstm_init_h)
-                    # self.hs_initializer(self.lstm_init_c)
 
 
 
@@ -256,7 +249,6 @@ class Ner(nn.Module):
             ## set padded label as 0, which will be filtered in post processing
             cur_bp.masked_fill_(mask[idx].view(batch_size, 1).expand(batch_size, tag_size), 0)
             back_points.append(cur_bp)
-        # exit(0)
         ### add score to final STOP_TAG
         partition_history = torch.cat(partition_history, 0).view(seq_len, batch_size, -1).transpose(1,0).contiguous() ## (batch_size, seq_len. tag_size)
         ### get the last position for each setences, and select the last partitions using gather()
@@ -284,7 +276,6 @@ class Ner(nn.Module):
             decode_idx[idx] = pointer.detach().view(batch_size)
         path_score = None
         decode_idx = decode_idx.transpose(1,0)
-        #TODO: why path score is None?
         return  decode_idx
 
     def _score_sentence(self, feats, tags, lens_):
@@ -324,7 +315,6 @@ class Ner(nn.Module):
     ) :
         forward_score = self._forward_alg(logits, lengths)
         gold_score = self._score_sentence(logits, labels, lengths)
-        #TODO: check if correct for negative log exp(score)
         loss = forward_score - gold_score  # batch_size NLL of the gold label
         return loss.mean()
 

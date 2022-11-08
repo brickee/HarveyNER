@@ -131,4 +131,4 @@ dependencies:
     - xxhash==2.0.0
     - yarl==1.6.3
     - zipp==3.4.0
-prefix: /home/grads/c/chenpei/anaconda3/envs/bert-ner
+prefix: /home/user/anaconda3/envs/bert-ner
