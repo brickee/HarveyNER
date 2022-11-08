@@ -22,21 +22,13 @@ HarveyNER focuses on the coordinate-oriented locations so we mainly annotate Poi
 # Dataset
 Please use the latest version in the [data](https://github.com/brickee/HarveyNER/tree/main/data/tweets) directory
 
-# Requirement
-Please see [requirement](https://github.com/brickee/HarveyNER/blob/main/requirements.txt)
-<!-- ```sh
-$ pytorch-transformers==1.2.0
-$ torch==1.7.1
-$ # metric
-$ seqeval==1.2.1
-$ # training progressbar
-$ tqdm==4.31.1
-$ # tokeniztion
-$ nltk==3.4.5
-$ # for rest api
-$ Flask==1.1.1
-$ Flask-Cors==3.0.8
-``` -->
+# Requiremenl
+Please see [requirement](https://github.com/brickee/HarveyNER/blob/main/requirements.txt). You can ceate a conda environment using the *bert_ner.yaml* file:
+```sh
+$ conda env create -f bert_ner.yml
+
+```
+
 
 # Run 
 ```sh
