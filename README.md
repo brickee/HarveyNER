@@ -22,7 +22,7 @@ HarveyNER focuses on the coordinate-oriented locations so we mainly annotate Poi
 # Dataset
 Please use the latest version in the [data](https://github.com/brickee/HarveyNER/tree/main/data/tweets) directory
 
-# Requiremenl
+# Requirement
 Please see [requirement](https://github.com/brickee/HarveyNER/blob/main/requirements.txt). You can ceate a conda environment using the *bert_ner.yaml* file:
 ```sh
 $ conda env create -f bert_ner.yml
