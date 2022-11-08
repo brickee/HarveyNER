@@ -7,7 +7,7 @@ HarveyNER focuses on the coordinate-oriented locations so we mainly annotate Poi
 * Roads: denote a road or a section of a road.
 * Rivers: denote a river or a section of a river.
 
-# Statistics of HarveyNER
+# Statistics
 |    Data Split    | Train | Valid |  Test | Total |
 |:----------------:|:-----:|:-----:|:-----:|:-----:|
 |    All Tweets    | 3,967 | 1,301 | 1,303 | 6,571 |
